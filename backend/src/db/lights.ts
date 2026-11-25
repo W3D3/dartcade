@@ -167,6 +167,28 @@ export async function insertLightProfile(
     .executeTakeFirstOrThrow()
 }
 
+/** Renames one of the player's profiles or replaces its rules. False if they have no such profile; throws on a taken name. */
+export async function updateLightProfile(
+  db: Kysely<Database>,
+  userId: string,
+  profileId: string,
+  p: { name?: string; rules?: readonly Rule[] },
+): Promise<boolean> {
+  const result = await db
+    .updateTable('light_profiles')
+    .set({ ...(p.name !== undefined && { name: p.name }), ...(p.rules && { rules: JSON.stringify(p.rules) }) })
+    .where('id', '=', profileId)
+    .where('owner_user_id', '=', userId)
+    .executeTakeFirst()
+  return result.numUpdatedRows > 0n
+}
+
+/** The boards that run this profile. */
+export async function boardsUsingProfile(db: Kysely<Database>, profileId: string): Promise<string[]> {
+  const rows = await db.selectFrom('boards').select('id').where('light_profile_id', '=', profileId).execute()
+  return rows.map(r => r.id)
+}
+
 /** True if the player had such a profile. Boards using it go back to the built-in one (the FK). */
 export async function deleteLightProfile(db: Kysely<Database>, userId: string, profileId: string): Promise<boolean> {
   const result = await db.deleteFrom('light_profiles').where('id', '=', profileId).where('owner_user_id', '=', userId).executeTakeFirst()

@@ -29,13 +29,23 @@ export type BoardTrigger = Trigger & { local: boolean }
 /** A raw WLED state, as sent back verbatim for a preset look (e.g. GET /json/state of a saved preset). */
 export type WledPresetState = Record<string, unknown>
 
-export type ColorLook = { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number }
-/** The strip's own WLED preset, sent back verbatim instead of a computed colour/fx. */
+/** `ix` is WLED's effect intensity, `pal` its palette (0, Default, takes the colour as is). */
+export type ColorLook = { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number; ix?: number; pal?: number }
+/** One of Dartcade's own preset states (`PRESETS`), by name; the state always comes from the server's copy. */
 export type PresetLook = { preset: string; state: WledPresetState }
-export type Look = ColorLook | PresetLook
+/** A preset saved on the player's own strip, by its WLED id. */
+export type StripPresetLook = { ps: number }
+/** A playlist saved on the player's own strip, by its WLED id (WLED starts a playlist through `ps`). */
+export type PlaylistLook = { pl: number }
+/** A WLED state patch the player wrote, only with the keys `checkWledState` allows. */
+export type RawLook = { raw: WledPresetState }
+export type Look = ColorLook | PresetLook | StripPresetLook | PlaylistLook | RawLook
+
+/** A visit total filter; `between` includes both ends. */
+export type TotalFilter = { op: '=' | '>=' | '<='; n: number } | { op: 'between'; n: number; to: number }
 
 export type Rule = {
-  when: { trigger: TriggerKind; total?: { op: '=' | '>='; n: number }; seats: 'any' | 'mine' | 'other'; game?: GameId }
+  when: { trigger: TriggerKind; total?: TotalFilter; seats: 'any' | 'mine' | 'other'; game?: GameId }
   type: 'scene' | 'flash'
   /** A disabled rule never matches. */
   enabled: boolean

@@ -243,8 +243,9 @@ export class LightsService {
     })
   }
 
-  /** Plays a profile rule for the API's Test button. False: no such rule, an unsupported/offline bridge, or nothing could be sent. */
-  async test(boardId: string, ruleIndex: number): Promise<boolean> {
+  /** Plays a rule for the API's Test buttons: the profile's rule at that place, or a rule not saved yet. False: no such rule,
+   *  an unsupported/offline bridge, or nothing could be sent. */
+  async test(boardId: string, which: number | Rule): Promise<boolean> {
     if (!supportsLights(this.deps.bridgeVersion(boardId))) return false
     let devices: WledDeviceRow[]
     let profile: Profile
@@ -255,7 +256,7 @@ export class LightsService {
       this.deps.warn('lights test failed', err)
       return false
     }
-    const rule = profile.rules.at(ruleIndex)
+    const rule = typeof which === 'number' ? profile.rules.at(which) : which
     if (!rule || devices.length === 0) return false
     const t: BoardTrigger = { ...sampleTrigger(rule.when.trigger), local: true }
     for (const device of devices)

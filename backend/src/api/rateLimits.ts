@@ -12,6 +12,8 @@ export const RATE = {
   lookup: { max: 30, timeWindow: '1 minute' },
   /** Called often by design: the name check while typing, a bridge polling for its token. */
   poll: { max: 60, timeWindow: '1 minute' },
+  /** Plays a light on the player's own strip (the Test buttons): a few a second at most, per signed-in user. */
+  lightTest: { max: 60, timeWindow: '1 minute', hook: 'preHandler', keyGenerator: (req: { userId: string }) => req.userId },
   /** A bug report mail to the operator: few per signed-in user, whatever the IP. */
   feedback: { max: 5, timeWindow: '1 hour', hook: 'preHandler', keyGenerator: (req: { userId: string }) => req.userId },
 } as const

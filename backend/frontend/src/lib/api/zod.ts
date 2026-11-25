@@ -38,6 +38,8 @@ export const WledFoundMessageSchema = z.object({ "kind": z.literal("wled.found")
 
 export const WledStatusMessageSchema = z.object({ "kind": z.literal("wled.status"), "data": z.object({ "device_id": z.string(), "reachable": z.boolean(), "version": z.string().optional(), "error": z.string().optional() }) })
 
+export const WledEffectsMessageSchema = z.object({ "kind": z.literal("wled.effects"), "data": z.object({ "device_id": z.string(), "version": z.string(), "effects": z.array(z.string().max(64)).max(512), "palettes": z.array(z.string().max(64)).max(512) }) })
+
 export const BigScreenStatusMessageSchema = z.object({ "kind": z.literal("bigscreen.status"), "data": z.object({ "helper": z.boolean(), "running": z.boolean(), "startup": z.boolean().optional(), "browser": z.string().optional() }) })
 
 export const BmRequestDataSchema = z.object({ "id": z.string().min(1), "op": z.enum(["start","stop","reset","calibrate","state","camera"]), "cam": z.number().int().gte(0).lte(2).optional() })

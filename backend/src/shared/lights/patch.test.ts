@@ -244,3 +244,33 @@ describe('seat colours', () => {
     expect(s.seg[0].col).toEqual([[1, 2, 3]])
   })
 })
+
+describe('patchFor, the looks a player can pick', () => {
+  const flash = (look: Rule['look']): Rule => ({
+    when: { trigger: 'bust', seats: 'mine' },
+    type: 'flash',
+    enabled: true,
+    look,
+    holdMs: 1500,
+  })
+  const bust: BoardTrigger = { kind: 'bust', seat: 1, local: true }
+
+  it('a preset or playlist on the strip is played by its id', () => {
+    expect(patch(flash({ ps: 7 }), bust, device, layout)).toEqual({ on: true, ps: 7 })
+    expect(patch(flash({ pl: 3 }), bust, device, layout)).toEqual({ on: true, ps: 3 })
+  })
+
+  it('raw JSON is sent as written, without segment geometry on WLED segments', () => {
+    const raw = { on: true, bri: 90, seg: [{ id: 0, start: 0, stop: 60, fx: 42 }] }
+    expect(patch(flash({ raw }), bust, device, layout)).toEqual(raw)
+    expect(patch(flash({ raw }), bust, { ...device, segmentMode: 'wled' }, layout)).toEqual({ on: true, bri: 90, seg: [{ id: 0, fx: 42 }] })
+  })
+
+  it('a colour look carries its intensity and palette; without them the defaults', () => {
+    const look: ColorLook = { color: '#ff9b45', fx: 42, bri: 200, speed: 160, ix: 90, pal: 6 }
+    const s = patch(flash(look), bust, device, layout) as WledState
+    expect(s.seg[0]).toMatchObject({ fx: 42, sx: 160, ix: 90, pal: 6, col: [[255, 155, 69]] })
+    const plain = patch(flash({ color: '#ff9b45', fx: 42, bri: 200 }), bust, device, layout) as WledState
+    expect(plain.seg[0]).toMatchObject({ ix: 128, pal: 0 })
+  })
+})

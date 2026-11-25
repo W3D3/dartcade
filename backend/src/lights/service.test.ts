@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Snapshot } from '../schema/game-ws.js'
-import { DEFAULT_PROFILE, type Profile } from '../shared/lights/index.js'
+import { DEFAULT_PROFILE, type Profile, type Rule } from '../shared/lights/index.js'
 import { LightsService, type LightsDeps } from './service.js'
 
 type Sent = { board: string; msg: { kind: string; data: Record<string, unknown> } }
@@ -490,6 +490,13 @@ describe('LightsService', () => {
     expect(await svc.test('b1', 0)).toBe(true) // rule 1 is a scene; Test holds it 3 s
     expect(applies(sent, 'b1')[0].hold_ms).toBe(3000)
     expect(await svc.test('b1', 99)).toBe(false)
+  })
+
+  it('test plays a rule not saved yet, with its own hold time', async () => {
+    const { svc, sent } = setup()
+    const draft: Rule = { when: { trigger: 'bust', seats: 'mine' }, type: 'flash', enabled: true, look: { ps: 9 }, holdMs: 1200 }
+    expect(await svc.test('b1', draft)).toBe(true)
+    expect(applies(sent, 'b1')[0]).toMatchObject({ state: { on: true, ps: 9 }, hold_ms: 1200 })
   })
 
   it('test sends nothing and returns false when devices() throws', async () => {

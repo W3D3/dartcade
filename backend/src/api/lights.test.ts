@@ -4,7 +4,7 @@ import { createFastify } from './fastify.js'
 import { lightsApiPlugin } from './lights.js'
 import { LightsStore } from '../lights/store.js'
 import { setupFlags } from '../flags/index.js'
-import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS } from '../shared/lights/index.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, PRESET_180, type Rule } from '../shared/lights/index.js'
 import { exportProfile } from '../lights/profileFile.js'
 
 vi.mock('../db/queries.js', () => ({
@@ -26,6 +26,8 @@ vi.mock('../db/lights.js', () => ({
   setBoardProfile: vi.fn(),
   setProfileSeatColors: vi.fn(),
   setEffectEnabled: vi.fn(),
+  updateLightProfile: vi.fn(),
+  boardsUsingProfile: vi.fn(),
   BUILT_IN_PROFILE_ID: 'default',
 }))
 // The route gate reads the flag user through here; a non-admin by default, like sessions.test.ts.
@@ -60,6 +62,8 @@ beforeEach(async () => {
   vi.mocked(dbLights.setBoardProfile).mockReset().mockResolvedValue(undefined)
   vi.mocked(dbLights.setProfileSeatColors).mockReset().mockResolvedValue(undefined)
   vi.mocked(dbLights.setEffectEnabled).mockReset().mockResolvedValue(true)
+  vi.mocked(dbLights.updateLightProfile).mockReset().mockResolvedValue(true)
+  vi.mocked(dbLights.boardsUsingProfile).mockReset().mockResolvedValue(['board-1', 'board-2'])
   // On for everyone by default, so the rest of this file can ignore the flag; the "flag off" test
   // below overrides it.
   await setupFlags(new Set(['lights.enabled']))
@@ -80,6 +84,7 @@ const LIGHTS_ROUTES: { method: 'GET' | 'PUT' | 'POST' | 'PATCH' | 'DELETE'; url:
   { method: 'GET', url: '/api/boards/board-1/lights/profile/export' },
   { method: 'POST', url: '/api/boards/board-1/lights/profiles/duplicate' },
   { method: 'POST', url: '/api/boards/board-1/lights/profiles/import', payload: {} },
+  { method: 'PUT', url: '/api/boards/board-1/lights/profiles/p1', payload: { name: 'Friday night' } },
   { method: 'DELETE', url: '/api/boards/board-1/lights/profiles/p1' },
   { method: 'POST', url: '/api/boards/board-1/lights/scan' },
   { method: 'POST', url: '/api/boards/board-1/lights/probe', payload: { host: '192.168.1.80' } },
@@ -99,7 +104,7 @@ const board = (overrides: Partial<{ id: string; owner_user_id: string; name: str
 
 type MakeAppOpts = {
   lights?: {
-    test?: (boardId: string, ruleIndex: number) => Promise<boolean>
+    test?: (boardId: string, rule: number | Rule) => Promise<boolean>
     devicesChanged?: (boardId: string) => Promise<void>
     darkenDevice?: (boardId: string, deviceId: string) => Promise<void>
   }
@@ -210,6 +215,12 @@ describe('GET /api/boards/:id/lights', () => {
     expect(body.found).toEqual([])
     expect(body.devices).toHaveLength(1)
     expect(body.devices[0]).toMatchObject({ id: 'd1', mac: 'aa:bb:cc:dd:ee:ff', segmentMode: 'whole', maxBri: 178, reachable: null })
+    expect(body.devices[0].effects).toBeUndefined()
+
+    // Once the bridge reported the device's effect and palette names, they come with it
+    store.setEffects('board-1', 'd1', { version: '0.15.0', effects: ['Solid', 'Blink'], palettes: ['Default'] })
+    const after = (await app.inject({ method: 'GET', url: '/api/boards/board-1/lights' })).json()
+    expect(after.devices[0]).toMatchObject({ effects: ['Solid', 'Blink'], palettes: ['Default'] })
   })
 
   it('reports bridgeOutdated for an old bridge version while online', async () => {
@@ -562,6 +573,70 @@ describe('light profiles', () => {
   })
 })
 
+describe('PUT /api/boards/:id/lights/profiles/:profileId', () => {
+  const url = '/api/boards/board-1/lights/profiles/p1'
+  const put = (app: ReturnType<typeof makeApp>['app'], payload: object, at = url) => app.inject({ method: 'PUT', url: at, payload })
+  const fireworks: Rule = {
+    when: { trigger: 'visit', seats: 'any', total: { op: 'between', n: 140, to: 100 }, game: 'x01' },
+    type: 'flash',
+    enabled: true,
+    look: { color: '#ff9b45', fx: 42, bri: 255, speed: 160, ix: 90, pal: 6 },
+    holdMs: 4000,
+  }
+  beforeEach(() => vi.mocked(queries.getBoardById).mockResolvedValue(board() as any))
+
+  it('saves the rules in the order sent, with a preset state from the server and a between filter put in order', async () => {
+    const { app, lights } = makeApp()
+    const preset = { ...DEFAULT_PROFILE.rules[7], look: { preset: '180', state: { psave: 1 } } }
+    const res = await put(app, { rules: [fireworks, preset, { ...fireworks, look: { ps: 7 } }, { ...fireworks, look: { pl: 3 } }] })
+    expect(res.statusCode).toBe(204)
+    const [, user, profile, saved] = vi.mocked(dbLights.updateLightProfile).mock.calls[0]
+    expect([user, profile]).toEqual(['user-1', 'p1'])
+    expect(saved.rules?.[0].when.total).toEqual({ op: 'between', n: 100, to: 140 })
+    expect(saved.rules?.[1].look).toEqual({ preset: '180', state: PRESET_180 })
+    expect(saved.rules?.slice(2).map(r => r.look)).toEqual([{ ps: 7 }, { pl: 3 }])
+    // Every board running the profile shows it at once
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')
+    expect(lights.devicesChanged).toHaveBeenCalledWith('board-2')
+  })
+
+  it('renames, trimmed; 409s a taken name or the built-in one', async () => {
+    const { app } = makeApp()
+    expect((await put(app, { name: '  Friday\n night ' })).statusCode).toBe(204)
+    expect(vi.mocked(dbLights.updateLightProfile).mock.calls[0][3]).toEqual({ name: 'Friday night', rules: undefined })
+    expect((await put(app, { name: 'dartcade DEFAULT' })).statusCode).toBe(409)
+    expect((await put(app, { name: ' \u0007 ' })).statusCode).toBe(400)
+    vi.mocked(dbLights.updateLightProfile).mockRejectedValueOnce(Object.assign(new Error('dup'), { code: '23505' }))
+    expect((await put(app, { name: 'Taken' })).statusCode).toBe(409)
+  })
+
+  it('400s a raw look with a key WLED must not get, and saves an allowed one', async () => {
+    const { app } = makeApp()
+    const raw = (state: object) => ({ ...fireworks, look: { raw: state } })
+    const bad = await put(app, { rules: [raw({ on: true, psave: 3 })] })
+    expect(bad.statusCode).toBe(400)
+    expect(bad.json().error).toBe('rules.0.look.raw: psave is not allowed')
+    expect((await put(app, { rules: [raw({ seg: [{ id: 0, rb: true }] })] })).json().error).toMatch(/seg\[0\]\.rb is not allowed/)
+    expect(dbLights.updateLightProfile).not.toHaveBeenCalled()
+    expect((await put(app, { rules: [raw({ on: true, bri: 90, seg: [{ id: 0, fx: 42, col: [[255, 0, 0]] }] })] })).statusCode).toBe(204)
+  })
+
+  it('400s an unknown trigger or game and more than 100 rules', async () => {
+    const { app } = makeApp()
+    expect((await put(app, { rules: [{ ...fireworks, when: { trigger: 'atc.hit', seats: 'any' } }] })).statusCode).toBe(400)
+    expect((await put(app, { rules: [{ ...fireworks, when: { trigger: 'bust', seats: 'any', game: 'darts' } }] })).statusCode).toBe(400)
+    expect((await put(app, { rules: Array.from({ length: 101 }, () => fireworks) })).statusCode).toBe(400)
+    expect(dbLights.updateLightProfile).not.toHaveBeenCalled()
+  })
+
+  it('404s the built-in profile and a profile that is not the player’s', async () => {
+    const { app } = makeApp()
+    expect((await put(app, { name: 'x' }, '/api/boards/board-1/lights/profiles/default')).statusCode).toBe(404)
+    vi.mocked(dbLights.updateLightProfile).mockResolvedValueOnce(false)
+    expect((await put(app, { name: 'x' })).statusCode).toBe(404)
+  })
+})
+
 describe('seat colours', () => {
   it('GET shows the built-in colours until the board has its own, and never puts them on a device', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
@@ -782,6 +857,22 @@ describe('POST /api/boards/:id/lights/test', () => {
     const { app } = makeApp({ bridgeVersion: () => '0.3.1' })
     const res = await app.inject({ method: 'POST', url: '/api/boards/board-1/lights/test', payload: { rule: 0 } })
     expect(res.statusCode).toBe(503)
+  })
+
+  it('plays a rule not saved yet, checked like a saved one', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board() as any)
+    const { app, lights } = makeApp()
+    const draft = { when: { trigger: 'bust', seats: 'mine' }, type: 'flash', enabled: true, look: { ps: 4 }, holdMs: 1500 }
+    const res = await app.inject({ method: 'POST', url: '/api/boards/board-1/lights/test', payload: { draft } })
+    expect(res.statusCode).toBe(202)
+    expect(lights.test).toHaveBeenCalledWith('board-1', draft)
+    const bad = await app.inject({
+      method: 'POST',
+      url: '/api/boards/board-1/lights/test',
+      payload: { draft: { ...draft, look: { raw: { rb: true } } } },
+    })
+    expect(bad.statusCode).toBe(400)
+    expect(lights.test).toHaveBeenCalledTimes(1)
   })
 
   it('202s otherwise and plays the rule', async () => {

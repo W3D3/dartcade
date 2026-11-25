@@ -106,7 +106,7 @@ describe('importProfile', () => {
       expect(r.imported).toBe(1)
       expect(r.ignored).toEqual([
         'effect 2: not an object',
-        'effect 3: look is not valid',
+        'effect 3: look is not valid: unknown preset',
         'effect 4: seats is not valid',
         'effect 5: type is not valid',
         'effect 6: enabled is not valid',
@@ -135,6 +135,52 @@ describe('importProfile', () => {
       )
       expect(r.rules.map(x => ('color' in x.look ? x.look.color : null))).toEqual(['seat', 'team', '#abcdef'])
       expect(r.ignored).toHaveLength(3)
+    })
+  })
+
+  describe('the looks a player made', () => {
+    const custom: Rule[] = [
+      {
+        when: { trigger: 'visit', seats: 'any', total: { op: 'between', n: 100, to: 139 }, game: 'x01' },
+        type: 'flash',
+        enabled: true,
+        look: { color: '#ff9b45', fx: 42, bri: 255, speed: 160, ix: 90, pal: 6 },
+        holdMs: 4000,
+      },
+      {
+        when: { trigger: 'visit', seats: 'mine', total: { op: '<=', n: 20 } },
+        type: 'flash',
+        enabled: true,
+        look: { ps: 12 },
+        holdMs: 2000,
+      },
+      { when: { trigger: 'lobby', seats: 'any' }, type: 'scene', enabled: false, look: { pl: 3 } },
+      {
+        when: { trigger: 'bust', seats: 'mine' },
+        type: 'flash',
+        enabled: true,
+        look: { raw: { on: true, bri: 90, seg: [{ id: 0, fx: 1, col: [[255, 0, 0]] }] } },
+        holdMs: 1500,
+      },
+    ]
+
+    it('round-trips a strip preset, a playlist, raw JSON and the new visit filters', () => {
+      const r = imported(exportProfile({ ...DEFAULT_PROFILE, rules: custom }))
+      expect(r.rules).toEqual(custom)
+      expect(r.ignored).toEqual([])
+      expect(r.adjusted).toEqual([])
+    })
+
+    it('ignores a raw look with a key the bridge must not get, saying which', () => {
+      const r = imported(file({ effects: [effect(), effect({ look: { raw: { on: true, psave: 4 } } })] }))
+      expect(r.imported).toBe(1)
+      expect(r.ignored).toEqual(['effect 2: look is not valid: psave is not allowed'])
+    })
+
+    it('moves a strip preset id into range', () => {
+      const r = imported(file({ effects: [effect({ look: { ps: 400 } })] }))
+      expect(r.rules[0].look).toEqual({ ps: 250 })
+      expect(r.adjusted).toEqual(['effect 1: preset id moved into range'])
     })
   })
 
@@ -265,5 +311,21 @@ describe('uniqueName', () => {
     const name = uniqueName(long, [long])
     expect(name).toHaveLength(60)
     expect(name.endsWith(' 2')).toBe(true)
+  })
+})
+
+describe('the fields import knows', () => {
+  it('are the schema’s own: a rule’s with its when flattened, and every look field', () => {
+    const r = imported(
+      file({
+        effects: [
+          effect({ look: { color: '#ff0000', fx: 1, bri: 255, ix: 9, pal: 2 } }),
+          effect({ look: { pl: 3 } }),
+          effect({ look: { raw: { on: true } } }),
+        ],
+      }),
+    )
+    expect(r.ignored).toEqual([])
+    expect(r.imported).toBe(3)
   })
 })

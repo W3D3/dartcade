@@ -991,6 +991,32 @@ paths:
         in: path
         required: true
         schema: { type: string }
+    put:
+      operationId: updateBoardLightProfile
+      summary: Rename one of the player's light profiles, or replace its rules (their order is the order they match in)
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              minProperties: 1
+              properties:
+                name: { type: string, minLength: 1, maxLength: 60 }
+                rules:
+                  type: array
+                  maxItems: 100
+                  items: { $ref: '#/components/schemas/LightRule' }
+      responses:
+        '204': { description: Saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
     delete:
       operationId: deleteBoardLightProfile
       summary: Delete one of the player's light profiles (boards using it go back to the built-in one)
@@ -1218,18 +1244,24 @@ paths:
       - $ref: '#/components/parameters/BoardId'
     post:
       operationId: testBoardLight
-      summary: Play one rule of the board's light profile on its devices
+      summary: Play one rule of the board's light profile, or a rule not saved yet, on its devices
       tags: [lights]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [rule]
-              additionalProperties: false
-              properties:
-                rule: { type: integer, minimum: 0 }
+              oneOf:
+                - type: object
+                  required: [rule]
+                  additionalProperties: false
+                  properties:
+                    rule: { type: integer, minimum: 0 }
+                - type: object
+                  required: [draft]
+                  additionalProperties: false
+                  properties:
+                    draft: { $ref: '#/components/schemas/LightRule' }
       responses:
         '202': { description: Played }
         '400': { $ref: '#/components/responses/BadRequest' }
@@ -7325,6 +7357,14 @@ components:
         reachable: { type: boolean, nullable: true, description: 'null until the bridge has sent to it' }
         error: { type: string }
         since: { type: string, format: date-time }
+        effects:
+          type: array
+          items: { type: string }
+          description: The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them
+        palettes:
+          type: array
+          items: { type: string }
+          description: The palette names the device reported, by WLED id
     FoundWledDevice:
       type: object
       required: [mac, host, name, leds, version, segments]
@@ -7352,15 +7392,19 @@ components:
             seats: { type: string, enum: [any, mine, other] }
             total:
               type: object
+              description: 'Visits only. `between` includes both ends and needs `to`'
               required: [op, n]
               additionalProperties: false
               properties:
-                op: { type: string, enum: ['=', '>='] }
+                op: { type: string, enum: ['=', '>=', '<=', between] }
                 n: { type: integer }
+                to: { type: integer }
             game: { type: string }
         type: { type: string, enum: [scene, flash] }
         look:
-          description: A computed colour/effect look, or the user's own WLED preset state sent back verbatim
+          description: >-
+            A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent);
+            a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys
           oneOf:
             - type: object
               required: [color, fx, bri]
@@ -7370,12 +7414,29 @@ components:
                 fx: { type: integer }
                 bri: { type: integer }
                 speed: { type: integer }
+                ix: { type: integer, description: WLED effect intensity }
+                pal: { type: integer, description: WLED palette }
             - type: object
-              required: [preset, state]
+              required: [preset]
               additionalProperties: false
               properties:
                 preset: { type: string }
                 state: { type: object, additionalProperties: true }
+            - type: object
+              required: [ps]
+              additionalProperties: false
+              properties:
+                ps: { type: integer }
+            - type: object
+              required: [pl]
+              additionalProperties: false
+              properties:
+                pl: { type: integer }
+            - type: object
+              required: [raw]
+              additionalProperties: false
+              properties:
+                raw: { type: object, additionalProperties: true }
         holdMs: { type: integer }
     LightSeatColors:
       type: array

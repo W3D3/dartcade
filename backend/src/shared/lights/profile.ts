@@ -79,13 +79,26 @@ export const DEFAULT_PROFILE: Profile = {
 }
 
 /** An effect's identity in the built-in profile, stable when the list is reordered: its trigger, seats, game and total filter. */
-export const ruleKey = (r: Rule): string =>
-  [r.when.trigger, r.when.seats, r.when.game ?? '', r.when.total ? `${r.when.total.op}${r.when.total.n}` : ''].join('|')
+export const ruleKey = (r: Rule): string => [r.when.trigger, r.when.seats, r.when.game ?? '', totalKey(r.when.total)].join('|')
+
+const totalKey = (t: Rule['when']['total']): string => (!t ? '' : t.op === 'between' ? `${t.n}-${t.to}` : `${t.op}${t.n}`)
 
 const seatsFit = (seats: Rule['when']['seats'], local: boolean) => seats === 'any' || (seats === 'mine') === local
 
-const totalFits = (total: Rule['when']['total'], t: BoardTrigger) =>
-  total === undefined || (t.kind === 'visit' && (total.op === '=' ? t.total === total.n : t.total >= total.n))
+function totalFits(total: Rule['when']['total'], t: BoardTrigger): boolean {
+  if (total === undefined) return true
+  if (t.kind !== 'visit') return false
+  switch (total.op) {
+    case '=':
+      return t.total === total.n
+    case '>=':
+      return t.total >= total.n
+    case '<=':
+      return t.total <= total.n
+    case 'between':
+      return t.total >= total.n && t.total <= total.to
+  }
+}
 
 /** The first rule of the profile that fits the trigger, or null. */
 export function match(profile: Profile, t: BoardTrigger, game: GameId | null): Rule | null {

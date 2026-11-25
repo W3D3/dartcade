@@ -834,7 +834,8 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /** Rename one of the player's light profiles, or replace its rules (their order is the order they match in) */
+        put: operations["updateBoardLightProfile"];
         post?: never;
         /** Delete one of the player's light profiles (boards using it go back to the built-in one) */
         delete: operations["deleteBoardLightProfile"];
@@ -998,7 +999,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Play one rule of the board's light profile on its devices */
+        /** Play one rule of the board's light profile, or a rule not saved yet, on its devices */
         post: operations["testBoardLight"];
         delete?: never;
         options?: never;
@@ -5711,6 +5712,10 @@ export interface components {
             error?: string;
             /** Format: date-time */
             since?: string;
+            /** @description The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them */
+            effects?: string[];
+            /** @description The palette names the device reported, by WLED id */
+            palettes?: string[];
         };
         FoundWledDevice: {
             mac: string;
@@ -5729,24 +5734,38 @@ export interface components {
                 trigger: string;
                 /** @enum {string} */
                 seats: "any" | "mine" | "other";
+                /** @description Visits only. `between` includes both ends and needs `to` */
                 total?: {
                     /** @enum {string} */
-                    op: "=" | ">=";
+                    op: "=" | ">=" | "<=" | "between";
                     n: number;
+                    to?: number;
                 };
                 game?: string;
             };
             /** @enum {string} */
             type: "scene" | "flash";
-            /** @description A computed colour/effect look, or the user's own WLED preset state sent back verbatim */
+            /** @description A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys */
             look: {
                 color: string;
                 fx: number;
                 bri: number;
                 speed?: number;
+                /** @description WLED effect intensity */
+                ix?: number;
+                /** @description WLED palette */
+                pal?: number;
             } | {
                 preset: string;
-                state: {
+                state?: {
+                    [key: string]: unknown;
+                };
+            } | {
+                ps: number;
+            } | {
+                pl: number;
+            } | {
+                raw: {
                     [key: string]: unknown;
                 };
             };
@@ -9235,6 +9254,40 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    updateBoardLightProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                profileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    rules?: components["schemas"]["LightRule"][];
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     deleteBoardLightProfile: {
         parameters: {
             query?: never;
@@ -9551,6 +9604,8 @@ export interface operations {
             content: {
                 "application/json": {
                     rule: number;
+                } | {
+                    draft: components["schemas"]["LightRule"];
                 };
             };
         };

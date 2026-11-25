@@ -3,6 +3,8 @@
 
 export type FoundDevice = { mac: string; host: string; name: string; leds: number; version: string; segments: number }
 export type DeviceStatus = { reachable: boolean; error?: string; since: Date }
+/** The effect and palette names a device reported, by WLED id. */
+export type DeviceEffects = { version: string; effects: string[]; palettes: string[] }
 
 type Found = {
   scan: FoundDevice[]
@@ -15,6 +17,7 @@ type Found = {
 export class LightsStore {
   private found_ = new Map<string, Found>()
   private statuses = new Map<string, DeviceStatus>()
+  private effects_ = new Map<string, DeviceEffects>()
 
   /** Replaces the scan list; a scan error is cleared by the next successful scan (no error passed). */
   setFound(boardId: string, devices: FoundDevice[], scannedAt: Date, scanError?: string): void {
@@ -53,10 +56,18 @@ export class LightsStore {
     return this.statuses.get(`${boardId}/${deviceId}`) ?? null
   }
 
-  /** Forgets the board's devices and statuses (bridge gone, board deleted): a board back online sends fresh ones. */
+  setEffects(boardId: string, deviceId: string, e: DeviceEffects): void {
+    this.effects_.set(`${boardId}/${deviceId}`, e)
+  }
+
+  effects(boardId: string, deviceId: string): DeviceEffects | null {
+    return this.effects_.get(`${boardId}/${deviceId}`) ?? null
+  }
+
+  /** Forgets the board's devices, statuses and effect lists (bridge gone, board deleted): a board back online sends fresh ones. */
   clear(boardId: string): void {
     this.found_.delete(boardId)
-    for (const key of this.statuses.keys()) if (key.startsWith(`${boardId}/`)) this.statuses.delete(key)
+    for (const map of [this.statuses, this.effects_]) for (const key of map.keys()) if (key.startsWith(`${boardId}/`)) map.delete(key)
   }
 }
 

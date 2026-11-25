@@ -15,6 +15,7 @@ import {
   BmResponseMessageSchema,
   BridgeUpdateStatusMessageSchema,
   CameraStillMessageSchema,
+  WledEffectsMessageSchema,
   WledFoundMessageSchema,
   WledStatusMessageSchema,
 } from '../schema/zod.js'
@@ -333,6 +334,14 @@ export function handleBridgeConnection(
           bridgeUpdates.report(boardDbId, m.data.data)
           // The owner's Boards page refetches the board on this push, so it shows the progress
           if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
+          return
+        }
+        if (earlyKind === 'wled.effects') {
+          const m = WledEffectsMessageSchema.safeParse(parsed)
+          if (m.success) {
+            const { device_id: deviceId, ...effects } = m.data.data
+            lights.setEffects(boardDbId, deviceId, effects)
+          }
           return
         }
         if (earlyKind === 'wled.status') {
