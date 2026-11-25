@@ -5,6 +5,7 @@ import type { AtcGame, CricketGame, GameDetail, HiloGame, MinigolfGame, Shanghai
 import { whoOf, type Face } from './face.js'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
+import { duelShare, share } from './details/statBars.js'
 import { rulesOf } from './gameViews/rules.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
@@ -110,7 +111,6 @@ function soloCompetitor(snapshot: Snapshot, seat: number, places: number[], c: P
 }
 
 const byPlacement = (cs: Competitor[]) => [...cs].sort((a, b) => a.placement - b.placement)
-const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
 
 // The Win-Duel artboard's match stats: the details page's rows but 140+ and darts thrown (the
 // darts are under each name)
@@ -122,7 +122,7 @@ function duelRow(row: DetailRow, a: Record<string, number>, b: Record<string, nu
   return {
     label: row.label,
     values: pair(formatStat(row, a), formatStat(row, b)),
-    share: row.better === 'lower' && x > 0 && y > 0 ? share(y, x) : share(x, y),
+    share: duelShare(row, x, y),
   }
 }
 

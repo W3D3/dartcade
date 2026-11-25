@@ -5,6 +5,7 @@
   import { Check, RotateCcwClock, Trophy } from '@lucide/svelte'
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
+  import StatDuelRow from './StatDuelRow.svelte'
   import WinFooterButton from './WinFooterButton.svelte'
   import GameXpChip from './progress/GameXpChip.svelte'
   import Celebration from './progress/Celebration.svelte'
@@ -135,12 +136,6 @@
 
 {#snippet who(c: Competitor)}
   {#if c.members.length}<span class="text-[14px] text-ink-2">{c.members.join(' & ')}</span>{/if}
-{/snippet}
-
-<!-- "50% · 3/6": phones keep the rate, the tally doesn't fit their value column -->
-{#snippet statValue(v: string)}
-  {@const [head, ...tail] = v.split(' · ')}
-  {head}{#if tail.length}<span class="max-md:hidden">{` · ${tail.join(' · ')}`}</span>{/if}
 {/snippet}
 
 <div class="win relative flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -307,23 +302,7 @@
               <span>{winner.name}</span><span class="label-caps">Match stats</span><span>{second.name}</span>
             </div>
             {#each view.stats as row (row.label)}
-              <div
-                class="w-full max-w-[760px] mx-auto grid grid-cols-[80px_minmax(0,1fr)_80px] md:grid-cols-[112px_minmax(0,1fr)_112px] xl:grid-cols-[150px_minmax(0,1fr)_150px] items-center gap-3 xl:gap-4 h-[46px] xl:h-[54px]"
-              >
-                <span class="text-right whitespace-nowrap font-display font-bold text-[26px] md:text-[30px] text-accent"
-                  >{@render statValue(row.values[0])}</span
-                >
-                <span class="flex flex-col gap-[5px]">
-                  <span class="text-center text-[12px] tracking-cta uppercase text-text-muted">{row.label}</span>
-                  <span class="flex h-[6px] rounded-[3px] overflow-hidden bg-line">
-                    <span class="bg-accent" style:width="{Math.round(row.share * 100)}%"></span>
-                    <span class="grow bg-line-chip ml-[2px]"></span>
-                  </span>
-                </span>
-                <span class="whitespace-nowrap font-display font-bold text-[26px] md:text-[30px] text-text-muted"
-                  >{@render statValue(row.values[1])}</span
-                >
-              </div>
+              <StatDuelRow label={row.label} values={row.values} share={row.share} />
             {/each}
           </section>
         {/if}
