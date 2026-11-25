@@ -31,6 +31,13 @@ type Manager struct {
 	blinkMu  sync.Mutex
 	blinking map[string]bool // by host: a blink is running for it right now
 
+	namesMu sync.Mutex
+	names   map[string]names // by MAC: the effect and palette names the device reported
+
+	ctx    context.Context // cancelled by Close, which then waits for bg
+	cancel context.CancelFunc
+	bg     sync.WaitGroup // the effect list reads still running
+
 	scanMu     sync.Mutex
 	browser    Browser // set by main.go; nil (no-op) in tests that don't exercise rescan-on-error
 	scanning   bool
@@ -67,19 +74,27 @@ func (m *Manager) triggerRescan() {
 }
 
 func New(report Report) *Manager {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Manager{
 		hc: NewHTTPClient(), report: report, minGap: 100 * time.Millisecond, blinkFor: 3 * time.Second,
-		workers: map[string]*worker{}, blinking: map[string]bool{},
+		workers: map[string]*worker{}, blinking: map[string]bool{}, names: map[string]names{},
+		ctx: ctx, cancel: cancel,
 	}
 }
 
-// SetDevices replaces the allowlist: workers for devices no longer listed stop.
+// SetDevices replaces the allowlist: workers for devices no longer listed stop. Each listed
+// device's effect and palette names are reported again (from the cache unless its version changed).
 func (m *Manager) SetDevices(ds []Device) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	keep := map[string]bool{}
 	for _, d := range ds {
 		keep[d.ID] = true
+		m.bg.Add(1)
+		go func(d Device) {
+			defer m.bg.Done()
+			m.reportEffects(m.ctx, d)
+		}(d)
 		if w, ok := m.workers[d.ID]; ok {
 			w.update(d)
 			continue
@@ -104,6 +119,11 @@ func (m *Manager) Apply(deviceID string, state json.RawMessage, holdMs int) {
 		log.Debug("wled: apply for an unpaired device, dropped", "device", deviceID)
 		return
 	}
+	state, err := Allowed(state)
+	if err != nil {
+		log.Warn("wled: bad state from the backend, dropped", "device", deviceID, "err", err)
+		return
+	}
 	w.push(state, time.Duration(holdMs)*time.Millisecond)
 }
 
@@ -117,12 +137,14 @@ func (m *Manager) Rehost(mac, host string) {
 }
 
 func (m *Manager) Close() {
+	m.cancel()
 	m.mu.Lock()
-	defer m.mu.Unlock()
 	for id, w := range m.workers {
 		w.stop()
 		delete(m.workers, id)
 	}
+	m.mu.Unlock()
+	m.bg.Wait()
 }
 
 type worker struct {

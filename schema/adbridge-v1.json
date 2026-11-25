@@ -430,6 +430,24 @@
         "error": { "type": "string" }
       }
     },
+    "WledEffectsData": {
+      "description": "Bridge to backend (kind wled.effects): the effect and palette names a paired device reports (GET /json/eff and /json/pal), by WLED id. Sent for each device on every wled.devices, from a cache kept per MAC and WLED version.",
+      "type": "object",
+      "required": ["device_id", "version", "effects", "palettes"],
+      "additionalProperties": false,
+      "properties": {
+        "device_id": { "type": "string" },
+        "version": { "type": "string" },
+        "effects": { "type": "array", "maxItems": 512, "items": { "type": "string", "maxLength": 64 } },
+        "palettes": { "type": "array", "maxItems": 512, "items": { "type": "string", "maxLength": 64 } }
+      }
+    },
+    "WledEffectsMessage": {
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "wled.effects" }, "data": { "$ref": "#/$defs/WledEffectsData" } }
+    },
     "WledFoundMessage": {
       "type": "object",
       "required": ["kind", "data"],

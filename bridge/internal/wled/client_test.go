@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -27,14 +28,22 @@ type fakeWLED struct {
 	posts    chan string
 	state    string
 	slowPost time.Duration // delays every POST /json/state response, so a test can overlap calls for real
+	version  atomic.Value  // string: the WLED version /json/info reports
+	effReads atomic.Int32  // how many times /json/eff was read
 }
 
 func newFakeWLED(t *testing.T, mac string) *fakeWLED {
 	f := &fakeWLED{mac: mac, posts: make(chan string, 32), state: `{"on":true,"bri":128,"seg":[{"id":0,"start":0,"stop":144}]}`}
+	f.version.Store("0.15.0")
 	f.srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == http.MethodGet && r.URL.Path == "/json/info":
-			io.WriteString(w, `{"ver":"0.15.0","name":"WLED","mac":"`+f.mac+`","leds":{"count":144}}`)
+			io.WriteString(w, `{"ver":"`+f.version.Load().(string)+`","name":"WLED","mac":"`+f.mac+`","leds":{"count":144}}`)
+		case r.Method == http.MethodGet && r.URL.Path == "/json/eff":
+			f.effReads.Add(1)
+			io.WriteString(w, `["Solid","Blink","Breathe"]`)
+		case r.Method == http.MethodGet && r.URL.Path == "/json/pal":
+			io.WriteString(w, `["Default","* Random Cycle"]`)
 		case r.Method == http.MethodGet && r.URL.Path == "/json/state":
 			io.WriteString(w, f.state)
 		case r.Method == http.MethodPost && r.URL.Path == "/json/state":
