@@ -7,7 +7,7 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { tick, untrack } from 'svelte'
   import { fly } from 'svelte/transition'
-  import { ChevronLeft, Users } from '@lucide/svelte'
+  import { ChevronLeft, Goal, Users } from '@lucide/svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import GameCards from '$lib/components/GameCards.svelte'
@@ -39,6 +39,7 @@
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const userCoursesOn = flag('minigolf.userCourses.enabled')
+  const missionsOn = flag('missions.enabled')
   const X01_DEFAULTS: Record<string, unknown> = {
     format: 'singles',
     startScore: 501,
@@ -253,6 +254,8 @@
           {/if}
         </p>
       </div>
+      <!-- Missions are started from their own list, not picked here (Play › Missions) -->
+      {#if $missionsOn}<Button variant="outline" href={hrefs.missions()} class="shrink-0"><Goal size={16} />Missions</Button>{/if}
     </header>
 
     <!-- Every game; once one is picked, a list beside its settings from lg (only the settings below) -->

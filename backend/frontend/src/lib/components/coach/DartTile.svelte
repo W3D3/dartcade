@@ -24,6 +24,6 @@
 {:else}
   <span class="inline-flex w-[72px] flex-col items-center gap-1">
     {@render name()}
-    <span class="text-center text-[11px] leading-tight text-text-muted">{tile.label}</span>
+    <span class="text-center text-micro/tight text-text-muted">{tile.label}</span>
   </span>
 {/if}

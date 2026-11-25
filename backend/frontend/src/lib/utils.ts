@@ -27,6 +27,7 @@ const twMerge = extendTailwindMerge({
         'pill',
         'mono',
         'mono-sm',
+        'micro',
         'kicker',
       ],
       radius: ['bar', 'chip', 'segment', 'sm', 'key', 'md', 'lg', 'card', 'popover', 'panel', 'pill'],

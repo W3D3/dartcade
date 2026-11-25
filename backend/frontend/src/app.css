@@ -100,6 +100,9 @@
   /* A challenge one step from done (Progress board) */
   --color-gold: #f2b94e;
   --color-gold-line: #6b5a2a;
+  /* Missions: the time limit and its countdown (amber, red in the last minute), and the expert pill */
+  --color-clock: #f3c76a;
+  --color-expert: #a78bfa;
 
   /* The Board Manager's status dot (lib/boardStatus.ts) */
   --color-bm-green: #84cc16;
@@ -206,6 +209,9 @@
   --text-mono-sm: 12px;
   --text-mono-sm--line-height: 1.4;
   --text-mono-sm--font-weight: 400;
+  /* Missions: the pills, the clock's caps and the steps strip's label */
+  --text-micro: 11px;
+  --text-micro--line-height: 1.2;
   --text-kicker: 13px;
   --text-kicker--line-height: 1.4;
   --text-kicker--font-weight: 400;
