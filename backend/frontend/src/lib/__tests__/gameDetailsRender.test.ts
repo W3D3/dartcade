@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
-import StatsTable from '../components/details/StatsTable.svelte'
-import Standings from '../components/details/Standings.svelte'
+import StatBars from '../components/details/StatBars.svelte'
 import ResultCard from '../components/details/ResultCard.svelte'
 import TeamShares from '../components/details/TeamShares.svelte'
 import X01Legs from '../components/details/X01Legs.svelte'
@@ -15,6 +14,7 @@ import HeatmapView from '../components/details/HeatmapView.svelte'
 import type { GameDetail, StatRow } from '../api'
 import { groupingMm, type HeatDart } from '../details/heatmap.js'
 import { detailSides } from '../details/page.js'
+import { canReview } from '../details/review.js'
 
 const rows: StatRow[] = [
   { key: 'average', label: '3-dart average', format: 'decimal', better: 'higher', compact: false },
@@ -54,21 +54,22 @@ const game = (n: number): GameDetail => ({
 })
 
 describe('details components', () => {
-  it('duel stats: labels, values, a dash for what does not apply, lime on the better side', () => {
+  it('duel stats: labels, values, a dash for what does not apply, the better side in lime', () => {
     const d = game(2)
-    const out = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    const out = render(StatBars, { props: { rows, sides: detailSides(d) } }).body
     expect(out).toContain('3-dart average')
     expect(out).toContain('83.9')
     expect(out).toContain('71.6')
     expect(out).toContain('—')
-    expect(out).toMatch(/text-accent[^>]*>83\.9/)
+    expect(out).toMatch(/text-accent[^>]*>(<!---->)?83\.9/)
+    expect(out).not.toMatch(/text-accent[^>]*>(<!---->)?71\.6/)
   })
 
   it('solo: one side, no highlight', () => {
     const d = game(1)
-    const out = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    const out = render(StatBars, { props: { rows, sides: detailSides(d) } }).body
     expect(out).toContain('83.9')
-    expect(out).not.toMatch(/text-accent[^>]*>83\.9/)
+    expect(out).not.toMatch(/text-accent[^>]*>(<!---->)?83\.9/)
     expect(render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body).not.toContain('Winner')
   })
 
@@ -91,36 +92,60 @@ describe('details components', () => {
 
     const party = game(3)
     party.game.players[2].bot = { level: 3 }
-    const standings = render(Standings, { props: { rows, sides: detailSides(party) } }).body
+    const standings = render(ResultCard, { props: { detail: party, sides: detailSides(party) } }).body
     expect(standings.match(/lucide-bot/g)).toHaveLength(1)
     // The other non-account seat is a guest: still the dashed ring
     expect(standings).toContain('border-dashed')
   })
 
-  it('phones: long names truncate and the score goes under both sides (#385)', () => {
+  it('long names wrap in the hero and the score goes under both sides on phones (#385)', () => {
     const d = game(2)
     d.game.players[1].name = 'TRIPLETWENTYTOMMYTHEDARTSKING123'
     const card = render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body
     expect(card).toContain('grid-cols-2 md:grid-cols-[1fr_auto_1fr]')
     expect(card).toMatch(/max-md:order-last max-md:col-span-2/)
-    expect(card).toMatch(/truncate[^"]*">TRIPLETWENTYTOMMYTHEDARTSKING123</)
-    const table = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    expect(card).toMatch(/wrap-anywhere[^"]*">TRIPLETWENTYTOMMYTHEDARTSKING123</)
+    expect(card).not.toContain('truncate')
+    const table = render(StatBars, { props: { rows, sides: detailSides(d) } }).body
     expect(table).toMatch(/min-w-0 truncate">TRIPLETWENTYTOMMYTHEDARTSKING123</)
-    expect(table).toMatch(/max-md:hidden">Match stats</)
   })
 
   it('hides non-compact rows on phones', () => {
-    const out = render(StatsTable, { props: { rows, sides: detailSides(game(2)) } }).body
-    expect(out).toMatch(/max-md:hidden[^>]*>[^<]*<span[^>]*>83\.9/)
+    const out = render(StatBars, { props: { rows, sides: detailSides(game(2)) } }).body
+    expect(out).toMatch(/max-md:hidden[^>]*><div class="md:hidden[^>]*>[^]*?3-dart average/)
+    expect(out).not.toMatch(/max-md:hidden[^>]*><div class="md:hidden[^>]*>[^]*?Best leg[^]*?3-dart average/)
   })
 
-  it('party standings: places and only the compact rows', () => {
+  it('party hero: a card per player in finishing order with place and score', () => {
     const d = game(3)
-    const out = render(Standings, { props: { rows, sides: detailSides(d) } }).body
-    expect(out).toContain('1st')
-    expect(out).toContain('3rd')
-    expect(out).toContain('Best leg')
-    expect(out).not.toContain('3-dart average')
+    d.stats.seats[0].values.legsWon = 1
+    d.stats.seats[2].values.legsWon = 3
+    d.game.players[2].placement = 1
+    d.game.players[0].placement = 3
+    const out = render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body
+    expect(out).toContain('aria-label="Result"')
+    expect(out.indexOf('1st')).toBeLessThan(out.indexOf('2nd'))
+    expect(out.indexOf('2nd')).toBeLessThan(out.indexOf('3rd'))
+    expect(out.indexOf('>P2<')).toBeLessThan(out.indexOf('>P0<'))
+    expect(out).toContain('>3<')
+  })
+
+  it('party bars: one bar per player, the best (lowest for fewest darts) in lime, exact numbers shown', () => {
+    const d = game(3)
+    d.stats.seats = [
+      { index: 0, values: { average: 60, bestLegDarts: 24 } },
+      { index: 1, values: { average: 90, bestLegDarts: 15 } },
+      { index: 2, values: { average: 30, bestLegDarts: 18 } },
+    ]
+    const out = render(StatBars, { props: { rows, sides: detailSides(d) } }).body
+    expect(out).toContain('90.0')
+    expect(out).toContain('15 darts')
+    expect(out).toMatch(/width: 100%/)
+    expect(out).toMatch(/width: 33%/)
+    // best leg: seat 1 holds 15 darts, so its value (not seat 0's 24) is coloured
+    expect(out).toMatch(/text-accent[^>]*>15 darts/)
+    expect(out).not.toMatch(/text-accent[^>]*>24 darts/)
+    expect(out).toContain('(best)')
   })
 
   it('teams: stats, each player share and the chalkboard name the thrower', () => {
@@ -154,7 +179,7 @@ describe('details components', () => {
       { index: 3, values: { average: 70.5, legsClosed: 0 } },
     ]
 
-    const statsOut = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    const statsOut = render(StatBars, { props: { rows, sides: detailSides(d) } }).body
     expect(statsOut).toContain('Team A')
     expect(statsOut).toContain('Team B')
     expect(statsOut).toContain('78.2')
@@ -237,92 +262,80 @@ describe('X01 Breakdown, one leg', () => {
 })
 
 describe('X01Section', () => {
-  it('title-tabs read Breakdown, Heatmap and Leg stats; the leg selector shows Match first, then Leg 1', () => {
-    const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
-    const dart = (s: ReturnType<typeof seg>, index: number) => ({
-      index,
-      segment: s,
-      coords: null,
-      source: 'manual' as const,
-      corrected: false,
-      thrownAt: '',
-    })
-    const d = game(2)
-    d.detail = {
-      mode: 'x01',
-      legs: [
-        {
-          leg: 0,
-          starter: 0,
-          winner: 0,
-          visits: [{ visit: 0, seat: 0, committedAt: '', darts: [dart(seg('T20', 20, 3), 0)], scored: 60, remaining: 441, bust: false }],
-        },
-      ],
-    }
-    const out = render(X01Section, { props: { detail: d, party: false } }).body
-    expect(out).toContain('role="tablist"')
-    expect(out).toContain('aria-label="Match view"')
-    expect(out.match(/role="tab"/g)).toHaveLength(3)
-    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Leg stats/)
-    expect(out).toMatch(/aria-selected="true"[^>]*>(<!---->)?Breakdown/)
-    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Heatmap/)
-    // The unselected tab hovers to the artboard's full-brightness text, not a middling one.
-    expect(out).toMatch(/text-text-dim hover:text-text[^>]*>(<!---->)?Heatmap/)
-    expect(out).toContain('role="tabpanel"')
-    // The leg selector sits between the title-tabs and the panel, Match first, then Leg 1 — a
-    // single-leg game still shows both (not a plain "Leg 1" label any more).
-    const tablistIdx = out.indexOf('role="tablist"')
-    const panelIdx = out.indexOf('role="tabpanel"')
-    const legGroupIdx = out.indexOf('aria-label="Leg"')
-    const matchIdx = out.indexOf('>Match<')
-    const leg1Idx = out.indexOf('>Leg 1<')
-    expect(legGroupIdx).toBeGreaterThan(tablistIdx)
-    expect(legGroupIdx).toBeLessThan(panelIdx)
-    expect(matchIdx).toBeGreaterThan(legGroupIdx)
-    expect(matchIdx).toBeLessThan(leg1Idx)
-    expect(leg1Idx).toBeLessThan(panelIdx)
-    // Match is selected by default.
-    expect(out).toMatch(/aria-pressed="true"[^>]*>Match</)
-    // Match on Breakdown: the one leg's chart and chalkboard, under its own "Leg 1" heading.
-    expect(out).toContain('T20')
-    expect(out).toContain('<svg')
-    // Heatmap's own subtitle only shows when Heatmap is the selected view.
-    expect(out).not.toContain('Where every dart landed')
-  })
-
-  it('party, several legs: Match repeats the chart and table once per leg, each under its own heading', () => {
-    const d = game(3)
+  const oneLeg = (n: number) => {
+    const d = game(n)
     d.detail = {
       mode: 'x01',
       legs: [0, 1].map(leg => ({
         leg,
         starter: 0,
-        winner: leg === 0 ? 1 : null,
+        winner: 0,
         visits: [{ visit: 0, seat: 0, committedAt: '', darts: [], scored: 60, remaining: 441, bust: false }],
       })),
     }
-    const out = render(X01Section, { props: { detail: d, party: true } }).body
-    const tablistIdx = out.indexOf('role="tablist"')
-    const panelIdx = out.indexOf('role="tabpanel"')
-    // The leg selector and the highlight picker both sit between the title-tabs and the panel —
-    // the same header block, not a row owned by X01Legs.
-    const legGroupIdx = out.indexOf('aria-label="Leg"')
-    const highlightIdx = out.indexOf('aria-label="Highlight a player"')
-    expect(legGroupIdx).toBeGreaterThan(tablistIdx)
-    expect(legGroupIdx).toBeLessThan(panelIdx)
-    expect(highlightIdx).toBeGreaterThan(tablistIdx)
-    expect(highlightIdx).toBeLessThan(panelIdx)
-    // Match is selected by default, not the last leg.
+    d.stats.legs = [0, 1].map(leg => ({ leg, rows, seats: d.stats.seats.map(v => ({ ...v, values: { average: 40 + leg } })) }))
+    return d
+  }
+
+  it('tabs read Statistics, Breakdown, Heatmap with Statistics first and selected; no Review without the coach', () => {
+    const out = render(X01Section, { props: { detail: oneLeg(2), party: false } }).body
+    expect(out).toContain('role="tablist"')
+    expect(out.match(/role="tab"/g)).toHaveLength(3)
+    expect(out).toMatch(/aria-selected="true"[^>]*>(<!---->)?Statistics/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Breakdown/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>(<!---->)?Heatmap/)
+    expect(out.indexOf('Statistics')).toBeLessThan(out.indexOf('Breakdown'))
+    expect(out).not.toContain('Review')
+    expect(out).not.toContain('Leg stats')
+    expect(out).toMatch(/text-text-dim hover:text-text[^>]*>(<!---->)?Heatmap/)
+  })
+
+  it('Match is selected by default and shows the combined match numbers, not a list of legs', () => {
+    const out = render(X01Section, { props: { detail: oneLeg(2), party: false } }).body
     expect(out).toMatch(/aria-pressed="true"[^>]*>Match</)
     expect(out).toMatch(/aria-pressed="false"[^>]*>Leg 1</)
-    expect(out).toMatch(/aria-pressed="false"[^>]*>Leg 2</)
-    // One "Leg N" heading per leg inside the panel, in order.
-    const leg1HeadingIdx = out.indexOf('>Leg 1<', panelIdx)
-    const leg2HeadingIdx = out.indexOf('>Leg 2<', panelIdx)
-    expect(leg1HeadingIdx).toBeGreaterThan(panelIdx)
-    expect(leg2HeadingIdx).toBeGreaterThan(leg1HeadingIdx)
-    // Heatmap's note doesn't show while Breakdown is selected.
+    expect(out.indexOf('>Match<')).toBeLessThan(out.indexOf('>Leg 1<'))
+    expect(out).toContain('Match statistics')
+    expect(out).toContain('83.9')
+    expect(out).not.toContain('Leg 1 statistics')
+    expect(out).not.toContain('<svg')
     expect(out).not.toContain('Where every dart landed')
+  })
+
+  it('party: the highlight picker belongs to Breakdown, not to Statistics', () => {
+    const out = render(X01Section, { props: { detail: oneLeg(3), party: true } }).body
+    expect(out).not.toContain('aria-label="Highlight a player"')
+    expect(out).toContain('P2')
+  })
+})
+
+describe('Review tab visibility', () => {
+  const finished = (): GameDetail => {
+    const d = game(2)
+    d.detail = { mode: 'x01', legs: [{ leg: 0, starter: 0, winner: 0, visits: [] }] }
+    d.game.config = { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 1 }
+    return d
+  }
+  it('shows for your own reviewable X01 game while the coach is on', () => {
+    expect(canReview(finished(), true)).toBe(true)
+  })
+  it("hides with the coach off, in another player's game, when invalidated, for other modes and for games the coach cannot grade", () => {
+    expect(canReview(finished(), false)).toBe(false)
+    const theirs = finished()
+    theirs.game.mySeat = null
+    expect(canReview(theirs, true)).toBe(false)
+    const invalid = finished()
+    invalid.game.invalidated = true
+    expect(canReview(invalid, true)).toBe(false)
+    const cricket = finished()
+    cricket.game.mode = 'cricket'
+    expect(canReview(cricket, true)).toBe(false)
+    const singleOut = finished()
+    singleOut.game.config = { ...singleOut.game.config, outMode: 'straight' }
+    expect(canReview(singleOut, true)).toBe(false)
+    const teams = finished()
+    teams.game.config = { ...teams.game.config, format: 'teams' }
+    expect(canReview(teams, true)).toBe(false)
   })
 })
 
@@ -345,17 +358,14 @@ describe('X01LegStats', () => {
 
   it("duel: that leg's values, not the match's", () => {
     const out = render(X01LegStats, { props: { detail: withLeg(game(2)), leg: 1 } }).body
-    expect(out).toContain('Leg stats')
+    expect(out).toContain('Leg 2 statistics')
     expect(out).toContain('41.0')
     expect(out).not.toContain('83.9')
   })
 
-  it('party: every player in seat order, without the match places', () => {
+  it('party: every player in seat order', () => {
     const d = withLeg(game(3))
-    d.game.players[0].placement = 3
     const out = render(X01LegStats, { props: { detail: d, leg: 1 } }).body
-    expect(out).not.toContain('Place')
-    expect(out).not.toContain('3rd')
     expect(out.indexOf('P0')).toBeLessThan(out.indexOf('P2'))
     expect(out).toContain('42.0')
   })
@@ -381,7 +391,7 @@ describe('X01LegStats', () => {
   })
 
   it('nothing for a leg without stats (a game saved before per-leg stats)', () => {
-    expect(render(X01LegStats, { props: { detail: game(2), leg: 0 } }).body).not.toContain('Leg stats')
+    expect(render(X01LegStats, { props: { detail: game(2), leg: 0 } }).body).not.toContain('Leg 1 statistics')
   })
 })
 

@@ -81,14 +81,16 @@ export function detailSides(d: GameDetail): DetailSide[] {
   }))
 }
 
-type Headline = { big: string; caption: string }
-const NO_HEADLINE: Headline = { big: '', caption: '' }
+/** `big` is the score in one piece ("3–1"); `scores` the same per side, for a party's own cards */
+type Headline = { big: string; caption: string; scores: string[] }
+const NO_HEADLINE: Headline = { big: '', caption: '', scores: [] }
+const scored = (scores: (string | number)[], caption: string): Headline => ({ big: scores.join('–'), caption, scores: scores.map(String) })
 
 // Legs won per side, for the modes played in legs
 function legsHeadline(d: GameDetail, sides: DetailSide[]): Headline {
   const firstTo = typeof d.game.config.firstTo === 'number' ? d.game.config.firstTo : null
   const legs = sides.map(s => (Object.hasOwn(s.values, 'legsWon') ? s.values.legsWon : 0))
-  return { big: legs.join('–'), caption: firstTo === null ? 'Legs' : `Legs · first to ${firstTo}` }
+  return scored(legs, firstTo === null ? 'Legs' : `Legs · first to ${firstTo}`)
 }
 
 /** Each mode's result card headline: the score in big type and what it counts. */
@@ -97,12 +99,12 @@ const HEADLINE = {
   cricket: legsHeadline,
   atc: (_d, sides) => {
     const winner = sides.find(s => s.placement === 1) ?? sides[0]
-    return { big: '', caption: atcResult(winner.values) }
+    return { ...NO_HEADLINE, caption: atcResult(winner.values) }
   },
   minigolf: (d, sides) => {
     if (d.detail.mode !== 'minigolf') return NO_HEADLINE
     const strokes = sides.map(s => (Object.hasOwn(s.values, 'strokes') ? s.values.strokes : 0))
-    return { big: strokes.join('–'), caption: `Strokes · ${d.detail.holes.length} holes on ${d.detail.course}` }
+    return scored(strokes, `Strokes · ${d.detail.holes.length} holes on ${d.detail.course}`)
   },
   // Their result sections carry the result: no headline
   p121: () => NO_HEADLINE,
@@ -112,7 +114,7 @@ const HEADLINE = {
   shanghai: (d, sides) => {
     if (d.detail.mode !== 'shanghai') return NO_HEADLINE
     const totals = sides.map(s => (Object.hasOwn(s.values, 'total') ? s.values.total : 0))
-    return { big: totals.join('–'), caption: d.detail.seats.some(s => s.shanghai) ? 'Points · ended with a Shanghai' : 'Points' }
+    return scored(totals, d.detail.seats.some(s => s.shanghai) ? 'Points · ended with a Shanghai' : 'Points')
   },
 } satisfies Record<GameId, (d: GameDetail, sides: DetailSide[]) => Headline>
 

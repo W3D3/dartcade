@@ -1,25 +1,19 @@
 <script lang="ts">
-  // One leg's match stats (the Leg stats tab): the match's table with that leg's values.
+  // The Statistics tab's body: the match's numbers as comparison bars, for the whole match (`leg`
+  // null) or for one leg, with each player's share for teams.
   import type { GameDetail } from '$lib/api'
-  import StatsTable from './StatsTable.svelte'
-  import Standings from './Standings.svelte'
+  import StatBars from './StatBars.svelte'
+  import TeamShares from './TeamShares.svelte'
   import { detailSides, layoutOf } from '$lib/details/page'
-  import { legStarterKey, x01Sides } from '$lib/details/x01'
 
-  let { detail, leg }: { detail: GameDetail; leg: number } = $props()
-  const stats = $derived(detail.stats.legs?.find(l => l.leg === leg))
+  let { detail, leg }: { detail: GameDetail; leg: number | null } = $props()
+  const stats = $derived(leg === null ? detail.stats : detail.stats.legs?.find(l => l.leg === leg))
   const sides = $derived(stats ? detailSides({ ...detail, stats }) : [])
-  const starter = $derived.by(() => {
-    const x01 = detail.detail.mode === 'x01' ? detail.detail : null
-    return x01 ? legStarterKey(x01, leg, x01Sides(detail.game, x01)) : null
-  })
   const layout = $derived(layoutOf(detail))
+  const title = $derived(leg === null ? 'Match statistics' : `Leg ${leg + 1} statistics`)
 </script>
 
 {#if stats}
-  {#if layout === 'party'}
-    <Standings rows={stats.rows} {sides} ranked={false} {starter} />
-  {:else}
-    <StatsTable rows={stats.rows} {sides} title={layout === 'teams' ? 'Team stats' : 'Leg stats'} />
-  {/if}
+  <StatBars rows={stats.rows} {sides} {title} />
+  {#if leg === null && layout === 'teams'}<TeamShares {detail} />{/if}
 {/if}

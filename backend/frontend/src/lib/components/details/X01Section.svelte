@@ -1,14 +1,13 @@
 <script lang="ts">
-  // X01 match details section (X01-Details*, X01-Details-Heatmap*): three title-tabs, "Breakdown",
-  // "Heatmap" and "Leg stats" (the match stats per leg), sharing one card and header row. Breakdown is the default; the view isn't in
-  // the URL. Below the title-tabs, one leg selector ("Match | Leg 1 | Leg 2 | …") is shared by
-  // every view and filters it to a leg, or to the whole match; it lives here (not in X01Legs
-  // or HeatmapView) for the same reason as the highlight and heatmap-player picks: those views
-  // are both remounted on every tab switch, so a pick they held themselves would reset. The
-  // highlight picker (party games) and Heatmap's "Where every dart landed" note sit alongside
-  // the title-tabs, as the artboards show.
-  import { hrefs } from '$lib/routes'
-  import { Button } from '$lib/components/ui/button'
+  // X01 match details section (X01-Details*, X01-Details-Heatmap*): title-tabs "Statistics" (the
+  // default: the match's numbers as comparison bars), "Breakdown" and "Heatmap", and, when the coach
+  // can review this game, a special "Review" tab at the end of the row. One leg selector ("Match |
+  // Leg 1 | Leg 2 | …") is shared by Statistics, Breakdown and Heatmap and filters them to a leg, or to
+  // the whole match (Statistics then shows the combined match numbers); Review shows every leg, so
+  // it hides the selector. The selector lives here (not in X01Legs or HeatmapView) for the same
+  // reason as the highlight and heatmap-player picks: those views are remounted on every tab
+  // switch, so a pick they held themselves would reset. The highlight picker (party games) and
+  // Heatmap's "Where every dart landed" note sit alongside the title-tabs, as the artboards show.
   import type { GameDetail } from '$lib/api'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import X01Legs from './X01Legs.svelte'
@@ -19,14 +18,12 @@
   import { rulesText } from '$shared/handicap'
   import { highlightDefault } from '$lib/details/page'
   import { flag } from '$lib/flags'
-  import { coachable } from '$shared/coach/coachable'
+  import { canReview } from '$lib/details/review'
+  import X01Review from './X01Review.svelte'
 
   let { detail, party = false }: { detail: GameDetail; party?: boolean } = $props()
   const coachEnabled = flag('coach.enabled')
-  // The coach reviews your own legs only, and no invalidated game
-  const canCoach = $derived(
-    $coachEnabled && coachable(detail.game.mode, detail.game.config) && detail.game.mySeat !== null && !detail.game.invalidated,
-  )
+  const canCoach = $derived(canReview(detail, $coachEnabled))
 
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
@@ -41,17 +38,17 @@
   )
   let heatPick = $state<number | null>(null)
 
-  type View = 'breakdown' | 'heatmap' | 'legs'
-  let view = $state<View>('breakdown')
+  type View = 'stats' | 'breakdown' | 'heatmap' | 'review'
   const tabs: { key: View; label: string }[] = [
+    { key: 'stats', label: 'Statistics' },
     { key: 'breakdown', label: 'Breakdown' },
     { key: 'heatmap', label: 'Heatmap' },
-    { key: 'legs', label: 'Leg stats' },
   ]
-  const pickView = (v: string) => (view = tabs.find(t => t.key === v)?.key ?? view)
+  let view = $state<View>('stats')
+  const pickView = (v: string) => (view = v === 'review' ? 'review' : (tabs.find(t => t.key === v)?.key ?? view))
 </script>
 
-<section aria-label="Breakdown, heatmap or leg stats" class="flex flex-col gap-4 min-w-0 box-border p-4 md:p-6 card">
+<section aria-label="Statistics, breakdown, heatmap or review" class="flex flex-col gap-4 min-w-0">
   <!-- contents: the tabs, the leg selector and the panel stay the section's own flex children -->
   <Tabs.Root value={view} onValueChange={pickView} class="contents">
     <div class="flex flex-col gap-3">
@@ -65,53 +62,53 @@
           {/each}
         </ul>
       {/if}
-      <div class="flex flex-wrap gap-3 {view === 'heatmap' ? 'items-end justify-between' : 'items-center justify-between'}">
-        <Tabs.List aria-label="Match view" class="flex items-end gap-[22px]">
-          {#each tabs as t (t.key)}
-            <Tabs.Trigger variant="title" value={t.key}>{t.label}</Tabs.Trigger>
-          {/each}
-        </Tabs.List>
+      <Tabs.List aria-label="Match view" class="flex flex-wrap items-end gap-x-[22px] gap-y-2">
+        {#each tabs as t (t.key)}
+          <Tabs.Trigger variant="title" value={t.key}>{t.label}</Tabs.Trigger>
+        {/each}
+        {#if canCoach}
+          <Tabs.Trigger variant="title" value="review">Review</Tabs.Trigger>
+        {/if}
+      </Tabs.List>
 
-        <div class="flex min-w-0 max-w-full flex-wrap items-center gap-3">
-          {#if view === 'heatmap'}
-            <span class="text-[13px] text-text-dim whitespace-nowrap">Where every dart landed</span>
-          {:else if party && view === 'breakdown'}
-            <HighlightPicker
-              options={sides.map(s => ({ key: s.key, name: s.name }))}
-              value={highlight ?? 0}
-              onpick={(k: number) => (highlightPick = k)}
-            />
-          {/if}
+      <!-- Under the tabs, right-aligned: the picks that narrow the view -->
+      <div class="flex min-w-0 max-w-full flex-wrap items-center justify-end gap-x-3 gap-y-2">
+        {#if view === 'heatmap'}
+          <span class="text-small text-text-dim whitespace-nowrap">Where every dart landed</span>
+        {:else if party && view === 'breakdown'}
+          <HighlightPicker
+            options={sides.map(s => ({ key: s.key, name: s.name }))}
+            value={highlight ?? 0}
+            onpick={(k: number) => (highlightPick = k)}
+          />
+        {/if}
 
-          {#if x01}
-            <div role="group" aria-label="Leg" class="flex flex-wrap gap-1 p-1 bg-bg rounded-md">
+        {#if x01 && view !== 'review'}
+          <div role="group" aria-label="Leg" class="flex flex-wrap justify-end gap-0.5 p-0.5 bg-bg rounded-md">
+            <button
+              type="button"
+              aria-pressed={legSel === null}
+              onclick={() => (legSel = null)}
+              class="h-8 min-w-14 px-2.5 border-0 rounded-segment text-label cursor-pointer
+ {legSel === null ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Match</button
+            >
+            {#each legs as l (l)}
               <button
                 type="button"
-                aria-pressed={legSel === null}
-                onclick={() => (legSel = null)}
-                class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-segment text-[15px] cursor-pointer
- {legSel === null ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Match</button
-              >
-              {#each legs as l (l)}
-                <button
-                  type="button"
-                  aria-pressed={l === legSel}
-                  onclick={() => (legSel = l)}
-                  class="h-10 min-w-[72px] md:min-w-24 px-3 border-0 rounded-segment text-[15px] cursor-pointer
+                aria-pressed={l === legSel}
+                onclick={() => (legSel = l)}
+                class="h-8 min-w-14 px-2.5 border-0 rounded-segment text-label cursor-pointer
  {l === legSel ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">Leg {l + 1}</button
-                >
-              {/each}
-            </div>
-          {/if}
-          {#if canCoach && legs.length > 0}
-            <Button variant="outline" href={hrefs.coachLeg(detail.game.id, legSel ?? legs[0])} class="h-10 text-[15px] font-semibold"
-              >Coach review</Button
-            >
-          {/if}
-        </div>
+              >
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
 
+    <Tabs.Content value="stats" class="flex flex-col gap-4 min-w-0">
+      {#if view === 'stats'}<X01LegStats {detail} leg={legSel} />{/if}
+    </Tabs.Content>
     <Tabs.Content value="breakdown" class="flex flex-col gap-4 min-w-0">
       {#if view === 'breakdown'}
         {#if legSel === null}
@@ -131,17 +128,8 @@
         <HeatmapView {detail} picked={heatPick} onpick={(s: number) => (heatPick = s)} leg={legSel} />
       {/if}
     </Tabs.Content>
-    <Tabs.Content value="legs" class="flex flex-col gap-4 min-w-0">
-      {#if view === 'legs'}
-        {#each legSel === null ? legs : [legSel] as l (l)}
-          <div class="flex flex-col gap-4 min-w-0">
-            {#if legSel === null}<h3 class="font-display font-bold text-[14px] tracking-wordmark uppercase text-text-dim">
-                Leg {l + 1}
-              </h3>{/if}
-            <X01LegStats {detail} leg={l} />
-          </div>
-        {/each}
-      {/if}
+    <Tabs.Content value="review" class="flex flex-col gap-4 min-w-0">
+      {#if view === 'review' && canCoach}<X01Review {detail} />{/if}
     </Tabs.Content>
   </Tabs.Root>
 </section>

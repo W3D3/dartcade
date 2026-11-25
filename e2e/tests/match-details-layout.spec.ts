@@ -87,11 +87,13 @@ test('X01 details: two players, names in the score hero and visit cells apart', 
   const id = await newestGameId(page, 'x01')
   for (const size of [IPAD_LANDSCAPE, DESKTOP]) {
     await openDetails(page, id, size, 'Result')
+    await page.getByRole('tab', { name: 'Breakdown' }).click()
     await expect(page.getByRole('table', { name: /Visits in this leg/ })).toBeVisible()
     await checkLayout(page, false)
   }
 
   await useLongNames(page, id)
   await openDetails(page, id, IPAD_LANDSCAPE, 'Result')
+  await page.getByRole('tab', { name: 'Breakdown' }).click()
   await checkLayout(page, true)
 })
