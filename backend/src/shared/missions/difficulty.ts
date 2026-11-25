@@ -16,7 +16,8 @@ const visitLevel = (points: number) => (points >= 140 ? 3 : points >= 100 ? 2 : 
 
 const LEG_DARTS = { 301: 6, 501: 9, 701: 12 } as const
 
-function stepLevel(step: Step): number {
+/** One step's level, 0 (easy) to 3 (expert). */
+export function stepLevel(step: Step): number {
   switch (step.type) {
     case 'checkout': {
       const slack = step.maxDarts - fewestDarts(step.start)
