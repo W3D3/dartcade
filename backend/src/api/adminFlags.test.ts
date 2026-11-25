@@ -53,13 +53,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
 
     const put = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asPlayer,
       payload: { mode: 'on' },
     })
     expect(put.statusCode).toBe(403)
 
-    const del = await app().inject({ method: 'DELETE', url: '/api/admin/flags/gamemode.p121.enabled', headers: asPlayer })
+    const del = await app().inject({ method: 'DELETE', url: '/api/admin/flags/lights.enabled', headers: asPlayer })
     expect(del.statusCode).toBe(403)
   })
 
@@ -67,7 +67,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     const res = await app().inject({ method: 'GET', url: '/api/admin/flags', headers: asAdmin })
     expect(res.statusCode).toBe(200)
     const body = res.json()
-    expect(findFlag(body, 'gamemode.p121.enabled')).toMatchObject({
+    expect(findFlag(body, 'lights.enabled')).toMatchObject({
       kind: 'boolean',
       default: { rule: 'admins', envOn: false },
       override: null,
@@ -86,7 +86,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it('turns a flag on for everyone, applied immediately over OFREP with no restart', async () => {
     const put = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'on' },
     })
@@ -94,7 +94,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     expect(put.json()).toMatchObject({ override: { mode: 'on', updatedBy: { id: 'admin', name: 'Admin' } }, value: true })
 
     const ofrep = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: asPlayer, payload: {} })
-    expect(findFlag(ofrep.json(), 'gamemode.p121.enabled')).toMatchObject({ value: true })
+    expect(findFlag(ofrep.json(), 'lights.enabled')).toMatchObject({ value: true })
   })
 
   it('tells the caller which flag changed, on set and on clear', async () => {
@@ -109,22 +109,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it('users mode: the listed player sees it on, another player does not', async () => {
     const put = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'users', userIds: ['player'] },
     })
     expect(put.json()).toMatchObject({ override: { mode: 'users', users: [{ id: 'player', name: 'Player' }] } })
 
     const ofrepPlayer = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: asPlayer, payload: {} })
-    expect(findFlag(ofrepPlayer.json(), 'gamemode.p121.enabled')).toMatchObject({ value: true })
+    expect(findFlag(ofrepPlayer.json(), 'lights.enabled')).toMatchObject({ value: true })
     const ofrepOther = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: { 'x-user': 'other' }, payload: {} })
-    expect(findFlag(ofrepOther.json(), 'gamemode.p121.enabled')).toMatchObject({ value: false })
+    expect(findFlag(ofrepOther.json(), 'lights.enabled')).toMatchObject({ value: false })
   })
 
   it('400s users mode without userIds', async () => {
     const res = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'users' },
     })
@@ -134,7 +134,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it('400s users mode when none of the user ids exist', async () => {
     const res = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'users', userIds: ['nope'] },
     })
@@ -144,7 +144,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it('drops user ids that no longer exist (a deleted account) and keeps the rest', async () => {
     const res = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'users', userIds: ['gone', 'player'] },
     })
@@ -153,7 +153,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     const row = await db
       .selectFrom('feature_flag_overrides')
       .select('user_ids')
-      .where('key', '=', 'gamemode.p121.enabled')
+      .where('key', '=', 'lights.enabled')
       .executeTakeFirstOrThrow()
     expect(row.user_ids).toEqual(['player'])
   })
@@ -161,13 +161,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it('two saves at once on different flags both end up live', async () => {
     const a = app()
     const [p121, minigolf] = await Promise.all([
-      a.inject({ method: 'PUT', url: '/api/admin/flags/gamemode.p121.enabled', headers: asAdmin, payload: { mode: 'on' } }),
+      a.inject({ method: 'PUT', url: '/api/admin/flags/lights.enabled', headers: asAdmin, payload: { mode: 'on' } }),
       a.inject({ method: 'PUT', url: '/api/admin/flags/gamemode.minigolf.enabled', headers: asAdmin, payload: { mode: 'on' } }),
     ])
     expect([p121.statusCode, minigolf.statusCode]).toEqual([200, 200])
 
     const ofrep = await a.inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: asPlayer, payload: {} })
-    expect(findFlag(ofrep.json(), 'gamemode.p121.enabled')).toMatchObject({ value: true })
+    expect(findFlag(ofrep.json(), 'lights.enabled')).toMatchObject({ value: true })
     expect(findFlag(ofrep.json(), 'gamemode.minigolf.enabled')).toMatchObject({ value: true })
   })
 
@@ -192,7 +192,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   it("400s userIds on a mode other than 'users'", async () => {
     const res = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { mode: 'on', userIds: ['player'] },
     })
@@ -220,7 +220,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
 
     const onNumber = await app().inject({
       method: 'PUT',
-      url: '/api/admin/flags/gamemode.p121.enabled',
+      url: '/api/admin/flags/lights.enabled',
       headers: asAdmin,
       payload: { number: 1 },
     })
@@ -238,15 +238,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
   })
 
   it('DELETE clears an override, back to its default', async () => {
-    await app().inject({ method: 'PUT', url: '/api/admin/flags/gamemode.p121.enabled', headers: asAdmin, payload: { mode: 'on' } })
-    const del = await app().inject({ method: 'DELETE', url: '/api/admin/flags/gamemode.p121.enabled', headers: asAdmin })
+    await app().inject({ method: 'PUT', url: '/api/admin/flags/lights.enabled', headers: asAdmin, payload: { mode: 'on' } })
+    const del = await app().inject({ method: 'DELETE', url: '/api/admin/flags/lights.enabled', headers: asAdmin })
     expect(del.statusCode).toBe(204)
 
     const list = await app().inject({ method: 'GET', url: '/api/admin/flags', headers: asAdmin })
-    expect(findFlag(list.json(), 'gamemode.p121.enabled')).toMatchObject({ override: null, value: true }) // admins-only default
+    expect(findFlag(list.json(), 'lights.enabled')).toMatchObject({ override: null, value: true }) // admins-only default
 
     const ofrepPlayer = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags', headers: asPlayer, payload: {} })
-    expect(findFlag(ofrepPlayer.json(), 'gamemode.p121.enabled')).toMatchObject({ value: false })
+    expect(findFlag(ofrepPlayer.json(), 'lights.enabled')).toMatchObject({ value: false })
   })
 
   it('a stale row (key no longer in FLAG_META) is listed under stale, and DELETE clears it too', async () => {

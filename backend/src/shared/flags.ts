@@ -32,7 +32,7 @@ export const FLAG_META = {
   'gamemode.minigolf.enabled': {
     kind: 'boolean',
     description: 'Shows Minigolf on the Play page, so players can start Minigolf games.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'minigolf.userCourses.enabled': {
     kind: 'boolean',
@@ -42,7 +42,7 @@ export const FLAG_META = {
   'gamemode.p121.enabled': {
     kind: 'boolean',
     description: 'Shows 121, the checkout drill, on the Play page.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'gamemode.catch40.enabled': {
     kind: 'boolean',
@@ -52,12 +52,12 @@ export const FLAG_META = {
   'gamemode.hilo.enabled': {
     kind: 'boolean',
     description: 'Shows Higher Lower on the Play page.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'gamemode.cricket.enabled': {
     kind: 'boolean',
     description: 'Shows Cricket on the Play page.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'gamemode.shanghai.enabled': {
     kind: 'boolean',
@@ -73,7 +73,7 @@ export const FLAG_META = {
   'auth.passkeys.enabled': {
     kind: 'boolean',
     description: 'Lets players add passkeys to their account, sign in with one and confirm account deletion with one.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'matchmaking.enabled': {
     kind: 'boolean',
@@ -102,7 +102,7 @@ export const FLAG_META = {
     kind: 'boolean',
     description:
       'Turns on progression: XP and levels, the Progress page, the XP chip on the win screen, day streaks, challenges and profile cosmetics.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'progression.manualDarts': {
     kind: 'boolean',
@@ -147,7 +147,7 @@ export const FLAG_META = {
     kind: 'boolean',
     description:
       'Shows the Stats page: your X01 averages, scoring and checkouts over your last legs or days, compared with the same range before.',
-    defaultRule: 'admins',
+    defaultRule: 'everyone',
   },
   'bigscreen.enabled': {
     kind: 'boolean',

@@ -22,10 +22,12 @@ describe('flags', () => {
   beforeAll(() => setupFlags(new Set()))
   afterEach(() => setOverrides(new Map()))
 
-  it('turns Minigolf on for admins only', async () => {
+  it('turns Minigolf on for everyone, and the player course editor for admins only', async () => {
     expect(await flagEnabled('gamemode.minigolf.enabled', admin)).toBe(true)
-    expect(await flagEnabled('gamemode.minigolf.enabled', player)).toBe(false)
-    expect(await flagEnabled('gamemode.minigolf.enabled', null)).toBe(false)
+    expect(await flagEnabled('gamemode.minigolf.enabled', player)).toBe(true)
+    expect(await flagEnabled('gamemode.minigolf.enabled', null)).toBe(true)
+    expect(await flagEnabled('minigolf.userCourses.enabled', admin)).toBe(true)
+    expect(await flagEnabled('minigolf.userCourses.enabled', player)).toBe(false)
   })
 
   it('never lets a lobby, the Play page or POST /api/sessions pick a mode with its own start (a mission)', async () => {
@@ -149,7 +151,7 @@ describe('flags', () => {
   })
 
   describe('overrides', () => {
-    const key = 'gamemode.p121.enabled' // admins-only by default, so 'off' and 'admins' modes change nothing observable but the rule
+    const key = 'lights.enabled' // admins-only by default, so 'off' and 'admins' modes change nothing observable but the rule
 
     it('off: nobody, admin included', async () => {
       await setOverrides(new Map([[key, { mode: 'off', userIds: [] }]]))

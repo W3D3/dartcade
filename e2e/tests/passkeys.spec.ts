@@ -2,7 +2,7 @@ import { test, expect, makeAdmin } from '../fixtures/auth.js'
 import type { Page } from '@playwright/test'
 import { E2E_ORIGIN } from '../fixtures/origin.js'
 
-// Passkeys are behind auth.passkeys.enabled, admins only by default: the account is made an admin.
+// Passkeys are on for everyone (auth.passkeys.enabled); the helper still makes the account an admin, which the flag no longer needs.
 // Chromium's virtual authenticator (CDP WebAuthn) stands in for the fingerprint reader.
 
 async function withAuthenticator(page: Page) {
@@ -98,4 +98,10 @@ test('the sign-in page signs in by itself through the browser’s autofill', asy
   await page.goto('/#/login')
   await page.reload()
   await page.waitForURL('**/#/')
+})
+
+test('a signed-out visitor sees the passkey sign-in button, with no flag override', async ({ page }) => {
+  await withAuthenticator(page)
+  await page.goto('/#/login')
+  await expect(page.getByRole('button', { name: 'Sign in with a passkey' })).toBeVisible()
 })

@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { gamesApiPlugin } from './games.js'
 import type { HistoryGame } from '../db/history.js'
-import { setupFlags } from '../flags/index.js'
+import { setOverrides, setupFlags } from '../flags/index.js'
 import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
 
 vi.mock('../db/history.js', () => ({
@@ -71,18 +71,23 @@ function makeApp() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('GET /api/gamemodes', () => {
-  it('lists the game modes (signed out: without flagged-off Minigolf)', async () => {
+  it('lists the game modes (signed out: only what is on for everyone)', async () => {
     await setupFlags(new Set())
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
     expect(res.statusCode).toBe(200)
     expect(res.json().modes.map((m: any) => ({ id: m.id, teams: m.teams, supportsBots: m.supportsBots }))).toEqual([
       { id: 'atc', teams: false, supportsBots: false },
       { id: 'x01', teams: true, supportsBots: true },
+      { id: 'p121', teams: false, supportsBots: false },
+      { id: 'minigolf', teams: false, supportsBots: false },
+      { id: 'hilo', teams: false, supportsBots: false },
+      { id: 'cricket', teams: true, supportsBots: true },
     ])
   })
 
-  it('lists Minigolf only for whom its flag is on (admins)', async () => {
+  it('lists a mode only for whom its flag is on (Minigolf set to admins)', async () => {
     await setupFlags(new Set())
+    await setOverrides(new Map([['gamemode.minigolf.enabled', { mode: 'admins', userIds: [] }]]))
     vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1', impersonatedBy: null })
     vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
@@ -96,6 +101,7 @@ describe('GET /api/gamemodes', () => {
       'cricket',
       'shanghai',
     ])
+    await setOverrides(new Map())
   })
 
   it("lists Minigolf's published courses plus Mixed", async () => {

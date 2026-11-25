@@ -46,9 +46,9 @@ test.describe('with reduced motion', () => {
   })
 })
 
-test('minigolf is not offered to players without its flag (admins only for now)', async ({ authedPage: page }) => {
+test('minigolf is offered to plain players, it is on for everyone', async ({ authedPage: page }) => {
   await page.goto('/#/play')
   const main = page.locator('main')
   await expect(main.getByRole('button', { name: /^X01:/ })).toBeVisible()
-  await expect(main.locator('button:has-text("Minigolf")')).toHaveCount(0)
+  await expect(main.locator('button:has-text("Minigolf")')).toHaveCount(1)
 })
