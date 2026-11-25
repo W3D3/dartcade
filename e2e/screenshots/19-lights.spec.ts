@@ -95,8 +95,9 @@ test('light profiles: the profile menu, a duplicate, an import with its result, 
     expect(file).toMatchObject({ format: 'dartcade-light-profile', version: 1, name: 'Phil’s lights' })
     expect(JSON.stringify(file)).not.toMatch(/"(id|host|mac|token|state)"/)
 
-    // The Delete button asks first; the rest are removed through the API so the next run starts from the built-in profile
-    await page.getByRole('button', { name: 'Delete', exact: true }).click()
+    // Delete (in the profile's ⋯ menu) asks first; the rest are removed through the API so the next run starts from the built-in profile
+    await page.getByRole('button', { name: 'More for Phil’s lights' }).click()
+    await page.getByRole('menuitem', { name: 'Delete' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Delete' }).click()
     await expect(page.getByRole('dialog')).toBeHidden()
     await removeOwnProfiles(page, boardId)
