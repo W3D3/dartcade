@@ -1,4 +1,5 @@
 import { seatColor } from './profile.js'
+import { kinded, unknownLook } from './ruleSchema.js'
 import type { BoardTrigger, ColorLook, LightDevice, Rule, SeatLayout, WledPresetState, WledSeg, WledState } from './types.js'
 
 // Segments cleared after the ones a whole/perSeat layout uses, so an older layout doesn't linger
@@ -47,10 +48,38 @@ export function patchFor(
   layout: SeatLayout,
   seatColors: readonly string[],
 ): WledState | WledPresetState {
-  if ('preset' in rule.look) {
-    const state = structuredClone(rule.look.state)
-    return device.segmentMode === 'wled' ? withoutSegmentGeometry(state) : state
+  const l = kinded(rule.look)
+  switch (l.kind) {
+    case 'color':
+      return colorPatch(l.look, t, device, layout, seatColors)
+    case 'ps':
+      return { on: true, ps: l.look.ps }
+    case 'pl':
+      // WLED starts a playlist by its preset id
+      return { on: true, ps: l.look.pl }
+    case 'preset':
+      return stateFor(l.look.state, device)
+    case 'raw':
+      return stateFor(l.look.raw, device)
+    default:
+      return unknownLook(l)
   }
+}
+
+/** A whole WLED state sent as it is, but on WLED segments without its geometry. */
+function stateFor(state: WledPresetState, device: LightDevice): WledPresetState {
+  const copy = structuredClone(state)
+  return device.segmentMode === 'wled' ? withoutSegmentGeometry(copy) : copy
+}
+
+/** A colour look, split over the device's segments by its segment mode. */
+function colorPatch(
+  colorLook: ColorLook,
+  t: BoardTrigger,
+  device: LightDevice,
+  layout: SeatLayout,
+  seatColors: readonly string[],
+): WledState {
   const seat = seatOf(t)
   // A preset the user applied earlier can leave its palette and other segment options behind on the
   // device; reset them so a colour look's effect (e.g. Breathe) can't inherit them (WLED effects take
@@ -59,17 +88,19 @@ export function patchFor(
   const look = {
     on: true,
     bri: 255,
-    col: [rgb(lookColor(rule.look, seat, layout, seatColors))],
-    fx: rule.look.fx,
-    sx: rule.look.speed ?? DEFAULT_SPEED,
+    col: [rgb(lookColor(colorLook, seat, layout, seatColors))],
+    fx: colorLook.fx,
+    sx: colorLook.speed ?? DEFAULT_SPEED,
     ...reset,
+    pal: colorLook.pal ?? reset.pal,
+    ix: colorLook.ix ?? reset.ix,
   }
   const part = (i: number) =>
     seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i, seatColors))], fx: 0, sx: DEFAULT_SPEED, ...reset }
   const clear = (from: number): WledSeg[] => Array.from({ length: MAX_SEGMENTS - from }, (_, k) => ({ id: from + k, stop: 0 }))
 
   if (device.segmentMode === 'whole') {
-    return { on: true, bri: rule.look.bri, seg: [{ id: 0, start: 0, stop: device.leds, ...look }, ...clear(1)] }
+    return { on: true, bri: colorLook.bri, seg: [{ id: 0, start: 0, stop: device.leds, ...look }, ...clear(1)] }
   }
   const n = Math.max(1, layout.seatCount)
   if (device.segmentMode === 'perSeat') {
@@ -80,8 +111,8 @@ export function patchFor(
       stop: i === n - 1 ? device.leds : (i + 1) * size,
       ...part(i),
     }))
-    return { on: true, bri: rule.look.bri, seg: [...seg, ...clear(n)] }
+    return { on: true, bri: colorLook.bri, seg: [...seg, ...clear(n)] }
   }
   const count = Math.min(n, device.segments)
-  return { on: true, bri: rule.look.bri, seg: Array.from({ length: count }, (_, i) => ({ id: i, ...part(i) })) }
+  return { on: true, bri: colorLook.bri, seg: Array.from({ length: count }, (_, i) => ({ id: i, ...part(i) })) }
 }

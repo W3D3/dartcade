@@ -14264,6 +14264,20 @@
                           "since": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "effects": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them"
+                          },
+                          "palettes": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "description": "The palette names the device reported, by WLED id"
                           }
                         }
                       }
@@ -14395,6 +14409,7 @@
                                   },
                                   "total": {
                                     "type": "object",
+                                    "description": "Visits only. `between` includes both ends and needs `to`",
                                     "required": [
                                       "op",
                                       "n"
@@ -14405,10 +14420,15 @@
                                         "type": "string",
                                         "enum": [
                                           "=",
-                                          ">="
+                                          ">=",
+                                          "<=",
+                                          "between"
                                         ]
                                       },
                                       "n": {
+                                        "type": "integer"
+                                      },
+                                      "to": {
                                         "type": "integer"
                                       }
                                     }
@@ -14426,7 +14446,7 @@
                                 ]
                               },
                               "look": {
-                                "description": "A computed colour/effect look, or the user's own WLED preset state sent back verbatim",
+                                "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
                                 "oneOf": [
                                   {
                                     "type": "object",
@@ -14448,14 +14468,21 @@
                                       },
                                       "speed": {
                                         "type": "integer"
+                                      },
+                                      "ix": {
+                                        "type": "integer",
+                                        "description": "WLED effect intensity"
+                                      },
+                                      "pal": {
+                                        "type": "integer",
+                                        "description": "WLED palette"
                                       }
                                     }
                                   },
                                   {
                                     "type": "object",
                                     "required": [
-                                      "preset",
-                                      "state"
+                                      "preset"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
@@ -14463,6 +14490,43 @@
                                         "type": "string"
                                       },
                                       "state": {
+                                        "type": "object",
+                                        "additionalProperties": true
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "ps"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "ps": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "pl"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "pl": {
+                                        "type": "integer"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "raw"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "raw": {
                                         "type": "object",
                                         "additionalProperties": true
                                       }
@@ -15962,6 +16026,440 @@
           }
         }
       ],
+      "put": {
+        "operationId": "updateBoardLightProfile",
+        "summary": "Rename one of the player's light profiles, or replace its rules (their order is the order they match in)",
+        "tags": [
+          "lights"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "minProperties": 1,
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 60
+                  },
+                  "rules": {
+                    "type": "array",
+                    "maxItems": 100,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "when",
+                        "type",
+                        "enabled",
+                        "look"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean",
+                          "description": "A disabled rule never triggers"
+                        },
+                        "when": {
+                          "type": "object",
+                          "required": [
+                            "trigger",
+                            "seats"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "trigger": {
+                              "type": "string"
+                            },
+                            "seats": {
+                              "type": "string",
+                              "enum": [
+                                "any",
+                                "mine",
+                                "other"
+                              ]
+                            },
+                            "total": {
+                              "type": "object",
+                              "description": "Visits only. `between` includes both ends and needs `to`",
+                              "required": [
+                                "op",
+                                "n"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "op": {
+                                  "type": "string",
+                                  "enum": [
+                                    "=",
+                                    ">=",
+                                    "<=",
+                                    "between"
+                                  ]
+                                },
+                                "n": {
+                                  "type": "integer"
+                                },
+                                "to": {
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            "game": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "type": {
+                          "type": "string",
+                          "enum": [
+                            "scene",
+                            "flash"
+                          ]
+                        },
+                        "look": {
+                          "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "color",
+                                "fx",
+                                "bri"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "color": {
+                                  "type": "string"
+                                },
+                                "fx": {
+                                  "type": "integer"
+                                },
+                                "bri": {
+                                  "type": "integer"
+                                },
+                                "speed": {
+                                  "type": "integer"
+                                },
+                                "ix": {
+                                  "type": "integer",
+                                  "description": "WLED effect intensity"
+                                },
+                                "pal": {
+                                  "type": "integer",
+                                  "description": "WLED palette"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "preset"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "preset": {
+                                  "type": "string"
+                                },
+                                "state": {
+                                  "type": "object",
+                                  "additionalProperties": true
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "ps"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "ps": {
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "pl"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "pl": {
+                                  "type": "integer"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "raw"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "raw": {
+                                  "type": "object",
+                                  "additionalProperties": true
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        "holdMs": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Saved"
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "operationId": "deleteBoardLightProfile",
         "summary": "Delete one of the player's light profiles (boards using it go back to the built-in one)",
@@ -17698,6 +18196,20 @@
                     "since": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "effects": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them"
+                    },
+                    "palettes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The palette names the device reported, by WLED id"
                     }
                   }
                 }
@@ -18063,6 +18575,20 @@
                     "since": {
                       "type": "string",
                       "format": "date-time"
+                    },
+                    "effects": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them"
+                    },
+                    "palettes": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The palette names the device reported, by WLED id"
                     }
                   }
                 }
@@ -18449,7 +18975,7 @@
       ],
       "post": {
         "operationId": "testBoardLight",
-        "summary": "Play one rule of the board's light profile on its devices",
+        "summary": "Play one rule of the board's light profile, or a rule not saved yet, on its devices",
         "tags": [
           "lights"
         ],
@@ -18458,17 +18984,195 @@
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "required": [
-                  "rule"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "rule": {
-                    "type": "integer",
-                    "minimum": 0
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "rule"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "rule": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "draft"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "draft": {
+                        "type": "object",
+                        "required": [
+                          "when",
+                          "type",
+                          "enabled",
+                          "look"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "enabled": {
+                            "type": "boolean",
+                            "description": "A disabled rule never triggers"
+                          },
+                          "when": {
+                            "type": "object",
+                            "required": [
+                              "trigger",
+                              "seats"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "trigger": {
+                                "type": "string"
+                              },
+                              "seats": {
+                                "type": "string",
+                                "enum": [
+                                  "any",
+                                  "mine",
+                                  "other"
+                                ]
+                              },
+                              "total": {
+                                "type": "object",
+                                "description": "Visits only. `between` includes both ends and needs `to`",
+                                "required": [
+                                  "op",
+                                  "n"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "op": {
+                                    "type": "string",
+                                    "enum": [
+                                      "=",
+                                      ">=",
+                                      "<=",
+                                      "between"
+                                    ]
+                                  },
+                                  "n": {
+                                    "type": "integer"
+                                  },
+                                  "to": {
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              "game": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "scene",
+                              "flash"
+                            ]
+                          },
+                          "look": {
+                            "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "color",
+                                  "fx",
+                                  "bri"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "color": {
+                                    "type": "string"
+                                  },
+                                  "fx": {
+                                    "type": "integer"
+                                  },
+                                  "bri": {
+                                    "type": "integer"
+                                  },
+                                  "speed": {
+                                    "type": "integer"
+                                  },
+                                  "ix": {
+                                    "type": "integer",
+                                    "description": "WLED effect intensity"
+                                  },
+                                  "pal": {
+                                    "type": "integer",
+                                    "description": "WLED palette"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "preset"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "preset": {
+                                    "type": "string"
+                                  },
+                                  "state": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "ps"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "ps": {
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "pl"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "pl": {
+                                    "type": "integer"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "raw"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "raw": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "holdMs": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
                   }
-                }
+                ]
               }
             }
           }
@@ -109012,6 +109716,20 @@
           "since": {
             "type": "string",
             "format": "date-time"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them"
+          },
+          "palettes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The palette names the device reported, by WLED id"
           }
         }
       },
@@ -109086,6 +109804,7 @@
               },
               "total": {
                 "type": "object",
+                "description": "Visits only. `between` includes both ends and needs `to`",
                 "required": [
                   "op",
                   "n"
@@ -109096,10 +109815,15 @@
                     "type": "string",
                     "enum": [
                       "=",
-                      ">="
+                      ">=",
+                      "<=",
+                      "between"
                     ]
                   },
                   "n": {
+                    "type": "integer"
+                  },
+                  "to": {
                     "type": "integer"
                   }
                 }
@@ -109117,7 +109841,7 @@
             ]
           },
           "look": {
-            "description": "A computed colour/effect look, or the user's own WLED preset state sent back verbatim",
+            "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
             "oneOf": [
               {
                 "type": "object",
@@ -109139,14 +109863,21 @@
                   },
                   "speed": {
                     "type": "integer"
+                  },
+                  "ix": {
+                    "type": "integer",
+                    "description": "WLED effect intensity"
+                  },
+                  "pal": {
+                    "type": "integer",
+                    "description": "WLED palette"
                   }
                 }
               },
               {
                 "type": "object",
                 "required": [
-                  "preset",
-                  "state"
+                  "preset"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -109154,6 +109885,43 @@
                     "type": "string"
                   },
                   "state": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "ps"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "ps": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "pl"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "pl": {
+                    "type": "integer"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "raw"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "raw": {
                     "type": "object",
                     "additionalProperties": true
                   }
@@ -109243,6 +110011,7 @@
                     },
                     "total": {
                       "type": "object",
+                      "description": "Visits only. `between` includes both ends and needs `to`",
                       "required": [
                         "op",
                         "n"
@@ -109253,10 +110022,15 @@
                           "type": "string",
                           "enum": [
                             "=",
-                            ">="
+                            ">=",
+                            "<=",
+                            "between"
                           ]
                         },
                         "n": {
+                          "type": "integer"
+                        },
+                        "to": {
                           "type": "integer"
                         }
                       }
@@ -109274,7 +110048,7 @@
                   ]
                 },
                 "look": {
-                  "description": "A computed colour/effect look, or the user's own WLED preset state sent back verbatim",
+                  "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
                   "oneOf": [
                     {
                       "type": "object",
@@ -109296,14 +110070,21 @@
                         },
                         "speed": {
                           "type": "integer"
+                        },
+                        "ix": {
+                          "type": "integer",
+                          "description": "WLED effect intensity"
+                        },
+                        "pal": {
+                          "type": "integer",
+                          "description": "WLED palette"
                         }
                       }
                     },
                     {
                       "type": "object",
                       "required": [
-                        "preset",
-                        "state"
+                        "preset"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -109311,6 +110092,43 @@
                           "type": "string"
                         },
                         "state": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "ps"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "ps": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "pl"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "pl": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "raw"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "raw": {
                           "type": "object",
                           "additionalProperties": true
                         }
@@ -109541,6 +110359,20 @@
                 "since": {
                   "type": "string",
                   "format": "date-time"
+                },
+                "effects": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The effect names the device reported, by WLED id (its place in the list); missing until the bridge read them"
+                },
+                "palettes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The palette names the device reported, by WLED id"
                 }
               }
             }
@@ -109672,6 +110504,7 @@
                         },
                         "total": {
                           "type": "object",
+                          "description": "Visits only. `between` includes both ends and needs `to`",
                           "required": [
                             "op",
                             "n"
@@ -109682,10 +110515,15 @@
                               "type": "string",
                               "enum": [
                                 "=",
-                                ">="
+                                ">=",
+                                "<=",
+                                "between"
                               ]
                             },
                             "n": {
+                              "type": "integer"
+                            },
+                            "to": {
                               "type": "integer"
                             }
                           }
@@ -109703,7 +110541,7 @@
                       ]
                     },
                     "look": {
-                      "description": "A computed colour/effect look, or the user's own WLED preset state sent back verbatim",
+                      "description": "A colour and WLED effect; one of Dartcade's preset states by name (`state` is the server's copy, ignored when sent); a preset (`ps`) or playlist (`pl`) saved on the strip; or a raw WLED state patch with only the allowed keys",
                       "oneOf": [
                         {
                           "type": "object",
@@ -109725,14 +110563,21 @@
                             },
                             "speed": {
                               "type": "integer"
+                            },
+                            "ix": {
+                              "type": "integer",
+                              "description": "WLED effect intensity"
+                            },
+                            "pal": {
+                              "type": "integer",
+                              "description": "WLED palette"
                             }
                           }
                         },
                         {
                           "type": "object",
                           "required": [
-                            "preset",
-                            "state"
+                            "preset"
                           ],
                           "additionalProperties": false,
                           "properties": {
@@ -109740,6 +110585,43 @@
                               "type": "string"
                             },
                             "state": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "ps"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "ps": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "pl"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "pl": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "raw"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "raw": {
                               "type": "object",
                               "additionalProperties": true
                             }

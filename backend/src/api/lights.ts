@@ -19,6 +19,8 @@ import {
   listLightProfiles,
   setBoardProfile,
   setEffectEnabled,
+  updateLightProfile,
+  boardsUsingProfile,
   setLightsEnabled,
   setProfileSeatColors,
   setSeatColors,
@@ -30,8 +32,18 @@ import { bridgeConnections } from '../bridge-gw/connections.js'
 import { lightsStore, type LightsStore } from '../lights/store.js'
 import type { LightsService } from '../lights/service.js'
 import { supportsLights } from '../lights/version.js'
-import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, profileFileName, type Rule } from '../shared/lights/index.js'
-import { exportProfile, importProfile, MAX_LIGHT_PROFILES, MAX_NAME, MAX_PROFILE_FILE_BYTES, uniqueName } from '../lights/profileFile.js'
+import { DEFAULT_PROFILE, DEFAULT_SEAT_COLORS, profileFileName, ruleSchema, rulesSchema, type Rule } from '../shared/lights/index.js'
+import {
+  exportProfile,
+  importProfile,
+  MAX_LIGHT_PROFILES,
+  MAX_NAME,
+  MAX_PROFILE_FILE_BYTES,
+  trimName,
+  uniqueName,
+} from '../lights/profileFile.js'
+import { RATE } from './rateLimits.js'
+import type { z } from 'zod'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -84,8 +96,15 @@ function isLocalHost(host: string): boolean {
   return h.toLowerCase().endsWith('.local')
 }
 
+/** The first problem zod found (a failed parse has at least one), as `rules.3.look: The state is empty`. */
+const firstIssue = (error: z.ZodError): string => {
+  const issue = error.issues[0]
+  return `${issue.path.join('.') || 'body'}: ${issue.message}`
+}
+
 function deviceView(d: WledDeviceRow, store: LightsStore) {
   const status = store.status(d.board_id, d.id)
+  const effects = store.effects(d.board_id, d.id)
   return {
     id: d.id,
     mac: d.mac,
@@ -99,6 +118,7 @@ function deviceView(d: WledDeviceRow, store: LightsStore) {
     reachable: status?.reachable ?? null,
     ...(status?.error !== undefined && { error: status.error }),
     ...(status && { since: status.since.toISOString() }),
+    ...(effects && { effects: effects.effects, palettes: effects.palettes }),
   }
 }
 
@@ -287,6 +307,34 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     },
   )
 
+  app.put<Route<'updateBoardLightProfile'>>(
+    '/api/boards/:id/lights/profiles/:profileId',
+    { preValidation: requireAuth, schema: fromSpec('updateBoardLightProfile'), bodyLimit: MAX_PROFILE_FILE_BYTES },
+    async (req, reply) => {
+      const { id, profileId } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      // The built-in profile can't be changed: Duplicate it first
+      if (profileId === BUILT_IN_PROFILE_ID) return reply.code(404).send({ error: 'not found' })
+      const rules = req.body.rules === undefined ? undefined : rulesSchema.safeParse(req.body.rules)
+      if (rules && !rules.success) return reply.code(400).send({ error: `rules.${firstIssue(rules.error)}` })
+      const name = req.body.name === undefined ? undefined : trimName(req.body.name)
+      if (name === '') return reply.code(400).send({ error: 'name: empty' })
+      if (name?.toLowerCase() === DEFAULT_PROFILE.name.toLowerCase()) return reply.code(409).send({ error: 'name taken' })
+      let saved: boolean
+      try {
+        saved = await updateLightProfile(db, req.userId, profileId, { name, rules: rules?.data })
+      } catch (err) {
+        if (pgErrorCode(err) === UNIQUE_VIOLATION) return reply.code(409).send({ error: 'name taken' })
+        throw err
+      }
+      if (!saved) return reply.code(404).send({ error: 'not found' })
+      // Every board running it shows the new rules at once (a scene that changed, an effect now gone)
+      for (const boardId of await boardsUsingProfile(db, profileId)) notifyChanged(boardId, req.log)
+      return reply.code(204).send()
+    },
+  )
+
   app.delete<Route<'deleteBoardLightProfile'>>(
     '/api/boards/:id/lights/profiles/:profileId',
     { preValidation: requireAuth, schema: fromSpec('deleteBoardLightProfile') },
@@ -470,14 +518,22 @@ export function lightsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 
   app.post<Route<'testBoardLight'>>(
     '/api/boards/:id/lights/test',
-    { preValidation: requireAuth, schema: fromSpec('testBoardLight') },
+    { preValidation: requireAuth, schema: fromSpec('testBoardLight'), config: { rateLimit: RATE.lightTest } },
     async (req, reply) => {
       const { id } = req.params
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
+      // A rule not saved yet (the editor's Test on board) is checked like a saved one
+      const { body } = req
+      let rule: number | Rule
+      if ('draft' in body) {
+        const draft = ruleSchema.safeParse(body.draft)
+        if (!draft.success) return reply.code(400).send({ error: `draft.${firstIssue(draft.error)}` })
+        rule = draft.data
+      } else rule = body.rule
       if (!(await getLightsEnabled(db, id))) return reply.code(409).send({ error: 'lights are off' })
       if (!bridgeReady(id)) return reply.code(503).send({ error: 'board offline' })
-      void lights.test(id, req.body.rule).catch((err: unknown) => req.log.warn({ err }, 'lights test failed'))
+      void lights.test(id, rule).catch((err: unknown) => req.log.warn({ err }, 'lights test failed'))
       return reply.code(202).send()
     },
   )

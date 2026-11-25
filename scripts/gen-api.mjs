@@ -118,6 +118,7 @@ async function genZod() {
     CameraStillMessageSchema: ab.$defs.CameraStillMessage,
     WledFoundMessageSchema: ab.$defs.WledFoundMessage,
     WledStatusMessageSchema: ab.$defs.WledStatusMessage,
+    WledEffectsMessageSchema: ab.$defs.WledEffectsMessage,
     BigScreenStatusMessageSchema: ab.$defs.BigScreenStatusMessage,
     BmRequestDataSchema: ab.$defs.BmRequestData,
     BmResponseMessageSchema: ab.$defs.BmResponseMessage,
