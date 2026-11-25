@@ -4,7 +4,7 @@
   // (#/coach?filter=lost) so back and forward step through it.
   import { hrefs } from '$lib/routes'
   import { querystring } from 'svelte-spa-router'
-  import { ChevronRight, Clock, LoaderCircle, Scan, Target } from '@lucide/svelte'
+  import { ChevronRight, Clock, LoaderCircle, Sparkles, Target } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import CountCards from '$lib/components/coach/CountCards.svelte'
@@ -163,7 +163,7 @@
     class="h-[38px] gap-1.5 text-[15px] font-semibold"
     aria-label="Review {vsLine(row.opponents)}, {row.context}"
   >
-    <Scan size={16} />Review
+    <Sparkles size={16} />Review
   </Button>
 {/snippet}
 
@@ -198,7 +198,7 @@
           aria-current="page"
           class="-mb-px flex items-center gap-3 border-b-[3px] border-accent px-1.5 pb-3.5 text-text no-underline hover:text-text"
         >
-          <Scan size={22} class="text-accent" />
+          <Sparkles size={22} class="text-accent" />
           <span class="font-display text-[28px] font-bold uppercase leading-none tracking-title md:text-[34px]">Review</span>
           {#if counts}
             <Pill label="{counts.legs} {counts.legs === 1 ? 'leg' : 'legs'}" tone="plain" />

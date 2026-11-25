@@ -99,12 +99,12 @@ describe('details page helpers', () => {
 
   it('makes the X01 headline from legs', () => {
     const d = x01([seat(0, 'A', 1), seat(1, 'B', 2)])
-    expect(headline(d, detailSides(d))).toEqual({ big: '3–1', caption: 'Legs · first to 3' })
+    expect(headline(d, detailSides(d))).toEqual({ big: '3–1', caption: 'Legs · first to 3', scores: ['3', '1'] })
   })
 
   it('makes the cricket headline from legs, like X01', () => {
     const d = cricketDetail([seat(0, 'A', 1), seat(1, 'B', 2)])
-    expect(headline(d, detailSides(d))).toEqual({ big: '3–1', caption: 'Legs · first to 3' })
+    expect(headline(d, detailSides(d))).toEqual({ big: '3–1', caption: 'Legs · first to 3', scores: ['3', '1'] })
   })
 
   it('writes the meta line', () => {
@@ -147,7 +147,7 @@ describe('details page helpers', () => {
       ['Christoph', 1],
       ['Guest 1', 2],
     ])
-    expect(headline(d, sides)).toEqual({ big: '', caption: '' })
+    expect(headline(d, sides)).toEqual({ big: '', caption: '', scores: [] })
     expect(metaLine(d)).toMatch(/^41 \/ 21 · 3 lives · 26 Sep 2026, \d\d:\d\d · Living room$/)
   })
 })

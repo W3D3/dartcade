@@ -26,9 +26,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import DetailsHeader from '$lib/components/details/DetailsHeader.svelte'
   import ResultCard from '$lib/components/details/ResultCard.svelte'
-  import StatsTable from '$lib/components/details/StatsTable.svelte'
-  import Standings from '$lib/components/details/Standings.svelte'
-  import TeamShares from '$lib/components/details/TeamShares.svelte'
+  import StatBars from '$lib/components/details/StatBars.svelte'
   import X01Section from '$lib/components/details/X01Section.svelte'
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import CricketSection from '$lib/components/details/CricketSection.svelte'
@@ -140,19 +138,9 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
-        <!-- X01 with 3+ players or teams: the breakdown's columns are too wide beside the results -->
-        {@const stacked = layout !== 'duel' && d.game.mode === 'x01'}
-        <!-- Cricket's party table (a column per player) needs the full width: beside the results from xl only -->
+        <!-- Cricket's party table (a column per player) needs the full width: beside the statistics from xl only -->
         {@const cricketParty = layout === 'party' && d.game.mode === 'cricket'}
-        {@const resultsClass = stacked
-          ? layout === 'teams'
-            ? 'lg:grid lg:grid-cols-2 lg:items-start'
-            : ''
-          : cricketParty
-            ? 'xl:shrink-0 xl:w-[560px]'
-            : layout === 'party'
-              ? 'lg:shrink-0 lg:w-[560px]'
-              : 'lg:shrink-0 lg:w-[420px] xl:w-[520px]'}
+        {@const x01 = d.game.mode === 'x01'}
         {@const title = getGameView(d.game.mode).title}
         <DetailsHeader
           detail={d}
@@ -223,39 +211,36 @@
               .sort((a, b) => a.placement - b.placement)}
           />
         {:else}
-          <main
-            class="relative grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col gap-4 md:gap-6 {stacked
-              ? ''
-              : cricketParty
-                ? 'xl:flex-row'
-                : 'lg:flex-row'}"
-          >
-            <section aria-label="Result and statistics" class="flex flex-col gap-4 min-w-0 {resultsClass}">
-              {#if layout === 'party'}
-                <Standings rows={d.stats.rows} {sides} />
-              {:else}
-                <div class={stacked ? 'lg:col-span-2' : ''}><ResultCard detail={d} {sides} /></div>
-                <StatsTable rows={d.stats.rows} {sides} title={layout === 'teams' ? 'Team stats' : 'Match stats'} />
-                {#if layout === 'teams'}<TeamShares detail={d} />{/if}
-              {/if}
-            </section>
-            <div class="grow min-w-0 flex flex-col gap-4 md:gap-6">
-              {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
-              {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
-              {#if d.game.mode === 'cricket'}<CricketSection detail={d} />{/if}
-              {#if d.game.mode === 'shanghai'}<ShanghaiSection detail={d} />{/if}
-              {#if d.game.mode === 'atc'}
-                <AtcTargets detail={d} />
-                {#if layout === 'party'}
-                  <HighlightPicker
-                    options={d.game.players.map(p => ({ key: p.seat, name: p.name }))}
-                    value={atcHighlight ?? highlightDefault(d)}
-                    onpick={(k: number) => (atcHighlight = k)}
-                  />
-                {/if}
-                <RaceChart detail={d} highlight={atcHighlight ?? highlightDefault(d)} />
-              {/if}
-            </div>
+          <main class="relative grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col gap-4 md:gap-6">
+            <ResultCard detail={d} {sides} />
+            {#if x01}
+              <!-- The statistics are X01's first tab: the section takes the whole width -->
+              <X01Section detail={d} party={layout === 'party'} />
+            {:else}
+              <div class="flex flex-col gap-4 md:gap-6 {cricketParty ? 'xl:flex-row' : 'lg:flex-row'}">
+                <div
+                  class="flex flex-col gap-4 min-w-0 {cricketParty ? 'xl:shrink-0 xl:w-[560px]' : 'lg:shrink-0 lg:w-[420px] xl:w-[520px]'}"
+                >
+                  <StatBars rows={d.stats.rows} {sides} />
+                </div>
+                <div class="grow min-w-0 flex flex-col gap-4 md:gap-6">
+                  {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
+                  {#if d.game.mode === 'cricket'}<CricketSection detail={d} />{/if}
+                  {#if d.game.mode === 'shanghai'}<ShanghaiSection detail={d} />{/if}
+                  {#if d.game.mode === 'atc'}
+                    <AtcTargets detail={d} />
+                    {#if layout === 'party'}
+                      <HighlightPicker
+                        options={d.game.players.map(p => ({ key: p.seat, name: p.name }))}
+                        value={atcHighlight ?? highlightDefault(d)}
+                        onpick={(k: number) => (atcHighlight = k)}
+                      />
+                    {/if}
+                    <RaceChart detail={d} highlight={atcHighlight ?? highlightDefault(d)} />
+                  {/if}
+                </div>
+              </div>
+            {/if}
           </main>
         {/if}
         {#snippet failed(_error: unknown, reset: () => void)}

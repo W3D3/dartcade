@@ -47,7 +47,10 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await openNewestGame(page)
   await expect(page.getByRole('heading', { name: 'X01' })).toBeVisible()
   await expect(page.getByText('3-dart average')).toBeVisible()
-  await expect(page.getByText('Breakdown')).toBeVisible()
+  // Statistics is the first tab and the default: the match's numbers as bars
+  await expect(page.getByRole('tab', { name: 'Statistics' })).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('region', { name: 'Match statistics' })).toBeVisible()
+  await page.getByRole('tab', { name: 'Breakdown' }).click()
   await expect(page.getByRole('table', { name: /Visits in this leg/ })).toContainText('T20')
 
   await page.getByRole('tab', { name: 'Heatmap' }).click()
