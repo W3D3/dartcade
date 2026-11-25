@@ -25,6 +25,32 @@
     <link rel="stylesheet" href="/src/app.css" />
   </head>
   <body>
+    <!-- Shown until the app mounts (main.ts removes it); BootLoader.svelte draws the same picture -->
+    <div
+      id="boot"
+      style="position: fixed; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; background: #0f100e"
+    >
+      <style>
+        @keyframes boot-pulse {
+          50% {
+            opacity: 0.5;
+          }
+        }
+        #boot svg {
+          animation: boot-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #boot svg {
+            animation: none;
+          }
+        }
+      </style>
+      <svg width="56" height="56" viewBox="0 0 32 32" aria-hidden="true">
+        <circle cx="16" cy="16" r="14" fill="none" stroke="#c6f24e" stroke-width="2.5" />
+        <circle cx="16" cy="16" r="7.5" fill="none" stroke="#c6f24e" stroke-width="2.5" />
+        <circle cx="16" cy="16" r="2.5" fill="#c6f24e" />
+      </svg>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

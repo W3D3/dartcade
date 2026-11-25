@@ -18,6 +18,7 @@
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
+  import BootLoader from '$lib/components/BootLoader.svelte'
   import CoachLoading from './routes/CoachLoading.svelte'
   import RouteLoadFailed from './routes/RouteLoadFailed.svelte'
   import Lobby from './routes/Lobby.svelte'
@@ -339,6 +340,7 @@
 <FinishSprite />
 <BadgeDefs />
 <Tooltip.Provider>
+  {#if !checked || redirectingTo}<BootLoader />{/if}
   {#if checked && !redirectingTo}
     {#if $currentUser?.nameNeedsChange && !bigScreen}
       <PickName />
