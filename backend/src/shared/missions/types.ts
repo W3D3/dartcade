@@ -104,7 +104,7 @@ const LegStep = z
   .strict()
   .refine(s => s.start <= s.within * 60, { message: 'cannot be won in that many darts', path: ['within'] })
 
-export const StepSchema = z.union([CheckoutStep, HitStep, MarksStep, VisitsStep, ScoreStep, AverageStep, LegStep])
+export const StepSchema = z.discriminatedUnion('type', [CheckoutStep, HitStep, MarksStep, VisitsStep, ScoreStep, AverageStep, LegStep])
 export type Step = z.infer<typeof StepSchema>
 export type StepType = Step['type']
 export type StepOf<K extends StepType> = Extract<Step, { type: K }>
