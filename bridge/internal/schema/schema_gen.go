@@ -1779,6 +1779,88 @@ func (j *WledDevicesData) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
+// Bridge to backend (kind wled.effects): the effect and palette names a paired
+// device reports (GET /json/eff and /json/pal), by WLED id. Sent for each device
+// on every wled.devices, from a cache kept per MAC and WLED version.
+type WledEffectsData struct {
+	// DeviceId corresponds to the JSON schema field "device_id".
+	DeviceId string `json:"device_id" yaml:"device_id" mapstructure:"device_id"`
+
+	// Effects corresponds to the JSON schema field "effects".
+	Effects []string `json:"effects" yaml:"effects" mapstructure:"effects"`
+
+	// Palettes corresponds to the JSON schema field "palettes".
+	Palettes []string `json:"palettes" yaml:"palettes" mapstructure:"palettes"`
+
+	// Version corresponds to the JSON schema field "version".
+	Version string `json:"version" yaml:"version" mapstructure:"version"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledEffectsData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["device_id"]; raw != nil && !ok {
+		return fmt.Errorf("field device_id in WledEffectsData: required")
+	}
+	if _, ok := raw["effects"]; raw != nil && !ok {
+		return fmt.Errorf("field effects in WledEffectsData: required")
+	}
+	if _, ok := raw["palettes"]; raw != nil && !ok {
+		return fmt.Errorf("field palettes in WledEffectsData: required")
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in WledEffectsData: required")
+	}
+	type Plain WledEffectsData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if len(plain.Effects) > 512 {
+		return fmt.Errorf("field %s length: must be <= %d", "effects", 512)
+	}
+	if len(plain.Palettes) > 512 {
+		return fmt.Errorf("field %s length: must be <= %d", "palettes", 512)
+	}
+	*j = WledEffectsData(plain)
+	return nil
+}
+
+type WledEffectsMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data WledEffectsData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledEffectsMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in WledEffectsMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in WledEffectsMessage: required")
+	}
+	type Plain WledEffectsMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "wled.effects" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "wled.effects")
+	}
+	*j = WledEffectsMessage(plain)
+	return nil
+}
+
 type WledFoundData struct {
 	// Devices corresponds to the JSON schema field "devices".
 	Devices []WledFoundDevice `json:"devices" yaml:"devices" mapstructure:"devices"`
