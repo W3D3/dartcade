@@ -1,7 +1,7 @@
 <script lang="ts">
   // Settings' Lights section (Settings-Lights board): pick a board, turn its lights on or off,
-  // manage its paired WLED devices and the ones the bridge found, and the built-in light
-  // profile. Pairing and editing a device open PairWledDialog, which reloads this section on save.
+  // manage its paired WLED devices and the ones the bridge found, and its light profile with the
+  // rule editor. Pairing and editing a device open PairWledDialog, which reloads this section on save.
   import { onDestroy, onMount } from 'svelte'
   import { querystring } from 'svelte-spa-router'
   import { RotateCcw } from '@lucide/svelte'
@@ -15,9 +15,12 @@
   import PairWledDialog from './PairWledDialog.svelte'
   import ImportResultDialog from './ImportResultDialog.svelte'
   import DeleteProfileDialog from './DeleteProfileDialog.svelte'
-  import { api, type Board, type BoardLights, type FoundWledDevice, type WledDevice } from '$lib/api'
+  import RenameProfileDialog from './RenameProfileDialog.svelte'
+  import RuleEditor from './RuleEditor.svelte'
+  import { api, type Board, type BoardLights, type FoundWledDevice, type LightRule, type WledDevice } from '$lib/api'
   import { downloadJson } from '$lib/lights/download'
-  import { profileFileName } from '$shared/lights/index.js'
+  import { DEFAULT_PROFILE, profileFileName } from '$shared/lights/index.js'
+  import { NEW_RULE } from '$lib/lights/rules'
   import { lightsLoadState } from '$lib/lights/view'
 
   let boards = $state<Board[]>([])
@@ -45,10 +48,19 @@
   let effectError = $state<string | null>(null)
   let importResult = $state<{ name: string; imported: number; ignored: string[]; adjusted: string[] } | null>(null)
   let confirmDelete = $state(false)
+  let renaming = $state(false)
+  /** The rule open in the editor: its place in the profile, null for a new one. */
+  let editing = $state<{ index: number | null; rule: LightRule } | null>(null)
+  /** The rules were saved a moment ago: the card says so. */
+  let saved = $state(false)
+  let savedTimer: ReturnType<typeof setTimeout> | null = null
   const panelState = $derived(lightsLoadState(!!lights, loadFailed))
 
   let deviceError = $state<string | null>(null)
   let testError = $state<string | null>(null)
+  /** A test was just sent to the board: says so while it plays. */
+  let testPlaying = $state(false)
+  let playingTimer: ReturnType<typeof setTimeout> | null = null
   let enabledError = $state<string | null>(null)
 
   /** Which pair/edit dialog is open, if any. */
@@ -94,6 +106,7 @@
     deviceError = null
     testError = null
     enabledError = null
+    editing = null
     if (!id) return
     startPoll(id)
     return stopPoll
@@ -130,6 +143,8 @@
   })
   onDestroy(() => {
     stopPoll()
+    if (savedTimer) clearTimeout(savedTimer)
+    if (playingTimer) clearTimeout(playingTimer)
     if (nowTimer) clearInterval(nowTimer)
   })
 
@@ -308,14 +323,97 @@
     else await loadLights(selectedId)
   }
 
-  async function test(rule: number) {
-    if (!selectedId) return
+  /** Plays a saved rule by its place, or a rule as the editor has it. */
+  async function test(rule: number | LightRule) {
+    if (!selectedId || !lights) return
     testError = null
-    const res = await api.POST('/api/boards/{id}/lights/test', { params: { path: { id: selectedId } }, body: { rule } }).catch(() => null)
+    testPlaying = false
+    const body = typeof rule === 'number' ? { rule } : { draft: rule }
+    const shown = typeof rule === 'number' ? lights.profile.rules[rule] : rule
+    const res = await api.POST('/api/boards/{id}/lights/test', { params: { path: { id: selectedId } }, body }).catch(() => null)
     if (!res || res.error) {
       const status = res?.response.status
-      testError = status === 409 ? 'Lights are off' : status === 503 ? 'The bridge is offline' : 'Could not play that rule'
+      testError =
+        status === 409
+          ? 'Lights are off'
+          : status === 503
+            ? 'The bridge is offline'
+            : status === 429
+              ? 'Slow down: too many tests in a minute'
+              : 'Could not play that rule'
+      return
     }
+    testPlaying = true
+    if (playingTimer) clearTimeout(playingTimer)
+    // A scene is held 3 s for a test, a flash for its own hold time
+    playingTimer = setTimeout(() => (testPlaying = false), shown.type === 'flash' ? (shown.holdMs ?? 3000) : 3000)
+  }
+
+  /** Saves the rules of the player's profile in use, showing them at once; a failed save puts the old ones back and says
+   *  why. Resolves to the problem, or null once saved. */
+  async function saveRules(rules: LightRule[]): Promise<string | null> {
+    if (!selectedId || !lights || lights.profile.builtIn) return 'The built-in profile cannot be changed'
+    const id = selectedId
+    const profileId = lights.profile.id
+    const prev = lights.profile.rules
+    const show = (r: LightRule[]) => {
+      if (lights && id === selectedId && lights.profile.id === profileId) lights = { ...lights, profile: { ...lights.profile, rules: r } }
+    }
+    show(rules)
+    const res = await api
+      .PUT('/api/boards/{id}/lights/profiles/{profileId}', { params: { path: { id, profileId } }, body: { rules } })
+      .catch(() => noAnswer)
+    if (res.error) {
+      show(prev)
+      return typeof res.error === 'object' ? res.error.error : 'Could not save the rules'
+    }
+    saved = true
+    if (savedTimer) clearTimeout(savedTimer)
+    savedTimer = setTimeout(() => (saved = false), 2500)
+    await loadLights(id)
+    return null
+  }
+
+  async function saveRule(rule: LightRule): Promise<string | null> {
+    if (!lights || !editing) return null
+    const { index } = editing
+    const rules = index === null ? [...lights.profile.rules, rule] : lights.profile.rules.map((r, i) => (i === index ? rule : r))
+    const problem = await saveRules(rules)
+    if (!problem) editing = null
+    return problem
+  }
+
+  async function deleteRule() {
+    if (!lights || editing?.index == null) return
+    const { index } = editing
+    const problem = await saveRules(lights.profile.rules.filter((_, i) => i !== index))
+    if (problem) profileError = problem
+    else editing = null
+  }
+
+  async function moveRule(from: number, to: number): Promise<boolean> {
+    if (!lights) return false
+    const rules = lights.profile.rules.filter((_, i) => i !== from)
+    rules.splice(to, 0, lights.profile.rules[from])
+    const problem = await saveRules(rules)
+    if (problem) profileError = problem
+    return !problem
+  }
+
+  async function resetRules() {
+    profileError = await saveRules(DEFAULT_PROFILE.rules)
+  }
+
+  async function renameProfile(name: string): Promise<string | null> {
+    if (!selectedId || !lights || lights.profile.builtIn) return null
+    const id = selectedId
+    const res = await api
+      .PUT('/api/boards/{id}/lights/profiles/{profileId}', { params: { path: { id, profileId: lights.profile.id } }, body: { name } })
+      .catch(() => noAnswer)
+    if (res.error)
+      return 'response' in res && res.response.status === 409 ? 'You already have a profile with that name' : 'Could not rename the profile'
+    await loadLights(id)
+    return null
   }
 </script>
 
@@ -394,6 +492,7 @@
 
         <div class="flex flex-col gap-3">
           {#if testError}<ErrorText>{testError}</ErrorText>{/if}
+          {#if testPlaying && !editing}<p role="status" class="text-small font-semibold text-accent">▶ Playing on the board now</p>{/if}
           {#if seatColorError}<ErrorText>{seatColorError}</ErrorText>{/if}
           {#if profileError}<ErrorText>{profileError}</ErrorText>{/if}
           {#if effectError}<ErrorText>{effectError}</ErrorText>{/if}
@@ -402,6 +501,12 @@
             profiles={lights.profiles}
             {canTest}
             ontest={(rule: number) => void test(rule)}
+            {saved}
+            onrename={() => (renaming = true)}
+            onreset={() => void resetRules()}
+            onedit={(index: number) => lights && (editing = { index, rule: lights.profile.rules[index] })}
+            onadd={() => (editing = { index: null, rule: NEW_RULE })}
+            onmove={moveRule}
             onseatcolor={(seat: number, hex: string) => void setSeatColor(seat, hex)}
             onresetseatcolors={() => void resetSeatColors()}
             onenabled={(index: number, enabled: boolean) => void setEffect(index, enabled)}
@@ -420,6 +525,26 @@
   {/if}
   {#if confirmDelete && lights}
     <DeleteProfileDialog name={lights.profile.name} onconfirm={() => void deleteProfile()} onclose={() => (confirmDelete = false)} />
+  {/if}
+  {#if renaming && lights}
+    <RenameProfileDialog name={lights.profile.name} onsave={renameProfile} onclose={() => (renaming = false)} />
+  {/if}
+  {#if editing && lights}
+    <RuleEditor
+      rule={editing.rule}
+      profileName={lights.profile.name}
+      position={(editing.index ?? lights.profile.rules.length) + 1}
+      count={lights.profile.rules.length + (editing.index === null ? 1 : 0)}
+      devices={lights.devices}
+      seatColors={lights.profile.seatColors}
+      canTest={lights.bridgeOnline && !lights.bridgeOutdated && lights.enabled}
+      {testError}
+      {testPlaying}
+      ontest={(rule: LightRule) => void test(rule)}
+      onsave={saveRule}
+      ondelete={editing.index === null ? undefined : () => void deleteRule()}
+      onclose={() => (editing = null)}
+    />
   {/if}
   {#if dialog && selectedId}
     {@const id = selectedId}
