@@ -200,7 +200,7 @@
     '/profile': Profile,
     // Before /profile/:id; one route (tab optional) so switching tabs keeps the page and its draft
     '/profile/customise/:tab?': Customise,
-    '/profile/:id': Profile,
+    '/profile/:id/:tab?': Profile,
     '/big-screen/:board': BigScreen,
     '/big-screen-frame': BigScreenFrame,
     '/admin': Admin,

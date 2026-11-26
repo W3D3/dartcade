@@ -1,11 +1,15 @@
 <script lang="ts">
   // A player's profile (Profile-Self, Profile-Lena, Profile-Anna, Profile-Phone boards): the hero
   // card in their own colours and banner, ranked, averages, recent matches, level, head-to-head,
-  // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
-  // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
+  // what they play most and their stats per mode. `#/profile` is yours, `#/profile/:id`
+  // anyone's. Your own looks the way others see it, plus your XP; Customise
   // opens `#/profile/customise`. Friends see the streak and status; recent games are public ones plus those the viewer played in (the API decides).
   import { hrefs } from '$lib/routes'
   import { ArrowLeft, Eye, Flame } from '@lucide/svelte'
+  import { push } from 'svelte-spa-router'
+  import * as Tabs from '$lib/components/ui/tabs/index.js'
+  import ProfileStats from '$lib/components/progress/ProfileStats.svelte'
+  import { tabOf } from '$lib/profile/modeStats'
   import Layout from '$lib/components/Layout.svelte'
   import ProfileCardSkeleton from '$lib/components/progress/ProfileCardSkeleton.svelte'
   import { loadingGate } from '$lib/loadingGate.svelte'
@@ -30,7 +34,7 @@
   import { lastSeenText, watchPath, type LastSeen } from '$lib/friends/view'
   import { me } from '$lib/lobby/sockets'
 
-  let { params = {} }: { params?: { id?: string } } = $props()
+  let { params = {} }: { params?: { id?: string; tab?: string } } = $props()
 
   let lastSeen = $state<LastSeen>()
   const progression = flag('progression.enabled')
@@ -63,14 +67,22 @@
 
   // Achievements (behind achievements.enabled): the showcase on the overview and a tab with them all
   const achievementsOn = flag('achievements.enabled')
-  let tab = $state<'overview' | 'achievements'>('overview')
   let shown = $state<Achievements | null>(null)
   $effect(() => {
     const id = userId
     shown = null
-    tab = 'overview'
     if (id && $achievementsOn) void fetchAchievements(id).then(a => (shown = id === userId ? a : shown))
   })
+
+  // The tab is in the URL (`#/profile/<id>/stats`); Achievements only while that flag is on
+  const tab = $derived.by(() => {
+    const t = tabOf(params.tab)
+    return t === 'achievements' && !shown ? 'overview' : t
+  })
+  const pickTab = (t: string) => {
+    const next = tabOf(t)
+    if (userId && next !== tab) void push(hrefs.profile(userId, next === 'overview' ? undefined : next).slice(1))
+  }
 
   const STATUS_TEXT = { online: 'Online', lobby: 'In a lobby', playing: 'Playing', offline: 'Offline' } as const
   const since = (iso: string) => new Date(iso).toLocaleDateString(LOCALE, { month: 'long', year: 'numeric' })
@@ -185,30 +197,33 @@
         </div>
       </section>
 
-      {#if shown}
-        <div role="tablist" aria-label="Profile" class="flex gap-1 border-b border-line">
-          {#each [['overview', 'Overview'], ['achievements', 'Achievements']] as const as [key, name] (key)}
-            <button
-              type="button"
-              role="tab"
-              aria-selected={tab === key}
-              onclick={() => (tab = key)}
-              class="-mb-px inline-flex cursor-pointer items-center gap-2 border-0 border-b-2 bg-transparent px-4 py-2 text-body font-semibold
-                     {tab === key ? 'border-accent text-text' : 'border-transparent text-text-muted hover:text-text'}"
-              >{name}{#if key === 'achievements'}<span class="rounded-full bg-surface-chip px-[7px] text-caption tabular-nums"
-                  >{shown.achievements.filter(a => a.tier > 0).length}</span
-                >{/if}</button
-            >
-          {/each}
-        </div>
-      {/if}
-
-      {#if shown && tab === 'achievements'}
-        <ProfileAchievements data={shown} {self} name={p.name} />
-      {:else}
-        {#if shown}<ProfileShowcase data={shown} {self} name={p.name} seeAll={() => (tab = 'achievements')} />{/if}
-        <ProfileOverview {p} {self} bind:lastSeen />
-      {/if}
+      <Tabs.Root value={tab} onValueChange={pickTab} class="contents">
+        <Tabs.List aria-label="Profile" class="flex shrink-0 gap-1 border-b border-line overflow-x-auto">
+          <Tabs.Trigger variant="line" value="overview">Overview</Tabs.Trigger>
+          <Tabs.Trigger variant="line" value="stats">Stats</Tabs.Trigger>
+          {#if shown}
+            <Tabs.Trigger variant="line" value="achievements" class="inline-flex items-center gap-2">
+              Achievements<span class="rounded-full bg-surface-chip px-[7px] text-caption tabular-nums"
+                >{shown.achievements.filter(a => a.tier > 0).length}</span
+              >
+            </Tabs.Trigger>
+          {/if}
+        </Tabs.List>
+        <Tabs.Content value="overview" class="flex flex-col gap-4 md:gap-6 min-w-0">
+          {#if tab === 'overview'}
+            {#if shown}<ProfileShowcase data={shown} {self} name={p.name} seeAll={() => pickTab('achievements')} />{/if}
+            <ProfileOverview {p} {self} bind:lastSeen />
+          {/if}
+        </Tabs.Content>
+        <Tabs.Content value="stats" class="flex flex-col gap-4 md:gap-6 min-w-0"
+          >{#if tab === 'stats'}<ProfileStats userId={p.id} {self} />{/if}</Tabs.Content
+        >
+        {#if shown}
+          <Tabs.Content value="achievements" class="flex flex-col gap-4 md:gap-6 min-w-0"
+            >{#if tab === 'achievements'}<ProfileAchievements data={shown} {self} name={p.name} />{/if}</Tabs.Content
+          >
+        {/if}
+      </Tabs.Root>
     {/if}
   </main>
 </Layout>

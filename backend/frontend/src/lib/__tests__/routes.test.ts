@@ -42,7 +42,7 @@ const SAMPLES: Record<keyof typeof hrefs, string[]> = {
   progress: [hrefs.progress()],
   rewards: [hrefs.rewards(), hrefs.rewards(15)],
   achievements: [hrefs.achievements()],
-  profile: [hrefs.profile(), hrefs.profile('u1')],
+  profile: [hrefs.profile(), hrefs.profile('u1'), hrefs.profile('u1', 'stats')],
   customise: [hrefs.customise(), hrefs.customise('frame')],
   bigScreen: [hrefs.bigScreen('b1')],
   bigScreenFrame: [hrefs.bigScreenFrame()],

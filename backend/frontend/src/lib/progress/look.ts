@@ -103,7 +103,7 @@ export const frameOf = (id: string): (typeof FRAMES)[string] | null => (id in FR
 const NAMES: Record<string, string> = { 'name.gold': 'cos-gold-name' }
 export const nameClass = (id: string): string => (id in NAMES ? NAMES[id] : '')
 
-/** What a kind is called: one of it (a tab, a chip) and the lot (the collection). */
+/** What a kind is called: one of it (a tab, a chip) and the lot (the Rewards tabs). */
 export const KIND_LABEL: Record<PerkKind, { one: string; many: string }> = {
   title: { one: 'Title', many: 'Titles' },
   banner: { one: 'Banner', many: 'Banners' },
