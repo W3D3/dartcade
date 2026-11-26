@@ -67,6 +67,7 @@ reach it over `https://`/`wss://`. More env vars worth knowing about (all option
 [`DEVELOPMENT.md`](../DEVELOPMENT.md#environment-variables) for the full list):
 
 - `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
+- `COUNTRY_HEADER`, `GEO_TRUST_HEADER`, `GEOIP_DB_PATH` — pre-fill a new account's country once at sign-up, from a country header your proxy sets (Cloudflare's `cf-ipcountry` is the default; `auto` also tries `x-vercel-ip-country`, `x-country-code`, `cloudfront-viewer-country`) or from a local GeoLite2/DB-IP country `.mmdb` file. The header is read only when `TRUST_PROXY` is set or `GEO_TRUST_HEADER=1`. Nothing happens when unset; existing accounts are not backfilled
 - `PUBLIC_URL` — the address the app is reached at, e.g. `https://darts.example.com`, so shared links show a preview image
 - Passkeys need nothing extra: the relying party id is the host of `BETTER_AUTH_URL`, so keep that URL stable (moving to another domain makes existing passkeys unusable) and serve over `https://`. They are on for everyone; an admin can turn them off at `#/admin/flags` (`auth.passkeys.enabled`)
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)

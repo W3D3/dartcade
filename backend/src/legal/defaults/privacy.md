@@ -19,12 +19,18 @@ The controller for data processed by Dartcade is {{operator.name}}, {{address}},
 | Preferences (caller voice, settings)                                                | Remembering your settings                                                             | Art. 6(1)(b) — the contract        |
 | Uploaded voice packs and courses                                                    | Letting you and others use what you uploaded                                          | Art. 6(1)(b) — the contract        |
 | Camera stills of each dart (see 3.)                                                 | Training our own dart detection                                                       | Art. 6(1)(f) — legitimate interest |
+| Country, derived once at sign-up (see below)                                        | Pre-filling the country shown next to your name                                       | Art. 6(1)(f) — legitimate interest |
 | Server logs (IP address, request, time)                                             | Keeping the service running and secure                                                | Art. 6(1)(f) — legitimate interest |
 
 Your games are visible to your friends. A friend can see that you are in a running game and watch it
 live: the score, the darts thrown and the result, as the players see them. Camera stills are not
 part of it. This applies to all your friends and there is no setting to limit it to some. While you
 are Invisible, your friends don't see your games and can't open them from your entry.
+
+When you sign up, we derive your country once from your connection, either from a country header
+our proxy adds or from a local country database. The IP address is used only for this lookup, is
+never sent to anyone else and is not stored for it. The result only pre-fills the country on your
+profile. You can change or remove it any time in Settings, and it is not set again afterwards.
 
 ## 3. Camera stills
 
