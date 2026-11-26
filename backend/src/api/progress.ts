@@ -3,12 +3,13 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { gameLines, getProgress, getStreak, lockUser, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
-import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
+import { profileModeStats } from '../stats/profileModes.js'
+import { headToHead, modeCounts, profileUser, recentGames, seatRows } from '../db/profile.js'
 import { getRatings, x01AverageSince } from '../db/ranked.js'
 import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
 import { areFriends } from '../db/friends.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
-import { EQUIP_KINDS, PERKS, equippedOf, listed, perk, streakNow, type Equipped } from '../shared/progression.js'
+import { EQUIP_KINDS, equippedOf, perk, streakNow, type Equipped } from '../shared/progression.js'
 import { RANKED_MODES } from '../shared/ranked.js'
 import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
@@ -89,7 +90,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       if (!user) throw notFound()
       const self = id === req.userId
       const friend = !self && (await areFriends(db, req.userId, id))
-      const [{ xp }, streak, modes, ratings, average, h2h, recent, unlocked, zone] = await Promise.all([
+      const [{ xp }, streak, modes, ratings, average, h2h, recent, zone] = await Promise.all([
         getProgress(db, id),
         getStreak(db, id),
         modeCounts(db, id),
@@ -97,7 +98,6 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         x01AverageSince(db, id, PROFILE_AVERAGE_DAYS),
         self ? null : headToHead(db, req.userId, id),
         recentGames(db, id, req.userId),
-        self ? unlockedPerks(db, id) : [],
         userTimeZone(db, id),
       ])
       return {
@@ -122,9 +122,18 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         playsMost: modes.slice(0, 3),
         recent: recent.map(g => ({ ...g, finishedAt: g.finishedAt.toISOString() })),
         xp: self ? xp : null,
-        collection: self ? { unlocked: unlocked.length, total: PERKS.filter(p => listed(p, unlocked)).length } : null,
         ban: user.ban && { category: user.ban.category, until: user.ban.until?.toISOString() ?? null },
       }
+    },
+  )
+
+  app.get<Route<'getPlayerModeStats'>>(
+    '/api/users/:id/mode-stats',
+    { preValidation: requireAuth, schema: fromSpec('getPlayerModeStats') },
+    async req => {
+      await requireProgression(req.userId)
+      if (!(await profileUser(db, req.params.id))) throw notFound()
+      return { modes: profileModeStats(await seatRows(db, req.params.id)) }
     },
   )
 
