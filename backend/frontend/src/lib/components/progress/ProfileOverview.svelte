@@ -1,17 +1,15 @@
 <script lang="ts">
   // The overview of a profile (Profile-Self, Profile-Lena boards): ranked, averages, recent matches,
-  // level, friends, head-to-head, what they play most, and your collection on your own.
+  // level, friends, head-to-head, what they play most (the per-mode stats are the Stats tab).
   import { hrefs } from '$lib/routes'
   import ProfileFriends from '$lib/components/progress/ProfileFriends.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import { fmtAvg } from '$lib/playerStats'
   import type { PlayerProfile } from '$lib/progress/profiles'
-  import { KIND_LABEL } from '$lib/progress/look'
   import { progress } from '$lib/progress/store'
   import { getGameView } from '$lib/gameViews'
   import { placementMark } from '$lib/progress/view'
-  import { PERKS, PERK_KINDS, listed } from '$shared/progression.js'
   import { rank } from '$shared/ranked.js'
   import type { LastSeen } from '$lib/friends/view'
   import { DAY_MS } from '$shared/time'
@@ -135,26 +133,6 @@
               ><span class="block h-full bg-accent" style="width: {pct}%"></span></span
             >
             <span class="text-right text-text-muted tabular-nums">{pct}%</span>
-          </div>
-        {/each}
-      </section>
-    {/if}
-
-    {#if self && $progress}
-      <section aria-label="Collection" class="card box-border flex flex-col gap-3 p-[18px] md:p-[22px]">
-        <div class="flex items-baseline justify-between">
-          <span class="text-[12px] label-caps text-text-dim">Collection</span>
-          <span class="text-[13px] text-text-muted">Only you see this</span>
-        </div>
-        {#each PERK_KINDS as kind (kind)}
-          {@const all = PERKS.filter(x => x.kind === kind && listed(x, $progress.perks.unlocked))}
-          {@const have = all.filter(x => $progress.perks.unlocked.includes(x.id)).length}
-          <div class="grid grid-cols-[120px_minmax(0,1fr)_56px] items-center gap-3 text-[14px]">
-            <span>{KIND_LABEL[kind].many}</span>
-            <span class="h-2 rounded-full bg-surface-inset overflow-hidden"
-              ><span class="block h-full bg-accent" style="width: {(have / all.length) * 100}%"></span></span
-            >
-            <span class="text-right text-text-muted tabular-nums">{have} of {all.length}</span>
           </div>
         {/each}
       </section>

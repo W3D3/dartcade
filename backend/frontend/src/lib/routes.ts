@@ -58,7 +58,8 @@ export const hrefs = {
   progress: () => at('/progress'),
   rewards: (level?: number | string) => at(level === undefined ? '/progress/rewards' : `/progress/rewards/${level}`),
   achievements: () => at('/progress/achievements'),
-  profile: (id?: string) => at(id ? `/profile/${id}` : '/profile'),
+  /** `tab` needs the id (yours too): the overview is the page without a tab. */
+  profile: (id?: string, tab?: 'stats' | 'achievements') => at(id ? (tab ? `/profile/${id}/${tab}` : `/profile/${id}`) : '/profile'),
   customise: (tab?: Tab) => at(tab ? `/profile/customise/${tab}` : '/profile/customise'),
   bigScreen: (board: string) => at(`/big-screen/${board}`),
   bigScreenFrame: () => at('/big-screen-frame'),
