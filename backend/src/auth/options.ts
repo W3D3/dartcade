@@ -12,6 +12,7 @@ import { termsGate } from './termsGate.js'
 import { bannedSignIn } from './banGate.js'
 import { runAccountCleanup } from './cleanup.js'
 import { passkeyPlugins } from './passkeys.js'
+import type { CountryResolver } from '../geo/country.js'
 import { discordProvider, type DiscordConfig } from './discord.js'
 
 export type AuthDeps = {
@@ -25,6 +26,8 @@ export type AuthDeps = {
   passkeysEnabledFor?: (userId: string) => Promise<boolean>
   /** Unset or null: no Sign in with Discord */
   discord?: DiscordConfig
+  /** Fills a new sign-up's country from the connection; none when not given. */
+  countryOf?: CountryResolver
 }
 
 /** better-auth's options: email/password with optional verification, Sign in with Discord if configured, and terms acceptance at sign-up. */
@@ -38,6 +41,7 @@ export function authOptions({
   baseURL,
   passkeysEnabledFor = () => Promise.resolve(false),
   discord = null,
+  countryOf,
 }: AuthDeps) {
   return {
     database: { db, type: 'pg' as const },
@@ -71,7 +75,10 @@ export function authOptions({
           }
         : undefined,
     user: {
-      additionalFields: { termsAcceptedAt: { type: 'date', required: false, input: false, fieldName: 'terms_accepted_at' } },
+      additionalFields: {
+        termsAcceptedAt: { type: 'date', required: false, input: false, fieldName: 'terms_accepted_at' },
+        country: { type: 'string', required: false, input: false },
+      },
       deleteUser: {
         enabled: true,
         // Leaves lobbies and forfeits running games before the row goes; a throw here aborts
@@ -94,7 +101,7 @@ export function authOptions({
     // would skip that) and the account's own email is verified too; otherwise the sign-in fails
     // with account_not_linked, so an unverified Discord email never takes over a password account.
     socialProviders: discord ? { discord: discordProvider(discord, db) } : {},
-    databaseHooks: { ...nameHooks(db), ...sessionHooks(db) },
+    databaseHooks: { ...nameHooks(db, countryOf), ...sessionHooks(db) },
     hooks: { before: termsGate, after: bannedSignIn(db) },
     // Bans go only through PUT/DELETE /api/admin/users/{id}/ban, which writes the audit row and
     // closes the player's sockets, lobby and game; the admin plugin's own routes would skip that.

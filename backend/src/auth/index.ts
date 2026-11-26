@@ -6,6 +6,7 @@ import { createMailer } from '../mail/transport.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import { authOptions } from './options.js'
 import { resolveDiscordConfig } from './discord.js'
+import { createCountryResolver, geoConfig } from '../geo/country.js'
 
 const trustedOrigins =
   process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',')
@@ -26,5 +27,6 @@ export const auth = betterAuth(
     baseURL: process.env.BETTER_AUTH_URL,
     passkeysEnabledFor: async userId => flagEnabled('auth.passkeys.enabled', await loadFlagUser(db, userId)),
     discord: discordConfig,
+    countryOf: createCountryResolver(geoConfig(process.env), warn),
   }),
 )

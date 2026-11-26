@@ -53,4 +53,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => 
     await expect(hooks.user.update.before({ emailVerified: true })).resolves.toBeUndefined()
     await expect(hooks.user.update.before({ name: 'Luke2' })).rejects.toMatchObject({ body: { message: 'Change your name in Settings' } })
   })
+
+  describe('country', () => {
+    type Ctx = Parameters<typeof hooks.user.create.before>[1]
+    type Given = { name: string; country?: string | null }
+    const withCountry = (user: Given, ctx: Ctx) => nameHooks(db, () => Promise.resolve('AT')).user.create.before(user, ctx)
+    const ctx = (path: string) => ({ path, headers: new Headers() }) as Ctx
+
+    it('is set for an email and a social sign-up', async () => {
+      expect((await withCountry({ name: 'Cea' }, ctx('/sign-up/email'))).data.country).toBe('AT')
+      expect((await withCountry({ name: 'Ceb' }, ctx('/callback/:id'))).data.country).toBe('AT')
+    })
+    it('never overwrites one already given', async () => {
+      expect((await withCountry({ name: 'Cec', country: 'FR' }, ctx('/sign-up/email'))).data.country).toBe('FR')
+    })
+    it('is not set when nothing resolves, or for an admin-created user', async () => {
+      expect((await hooks.user.create.before({ name: 'Ced' }, ctx('/sign-up/email'))).data).not.toHaveProperty('country')
+      expect((await withCountry({ name: 'Cee' }, ctx('/admin/create-user'))).data).not.toHaveProperty('country')
+      expect((await withCountry({ name: 'Cef' }, null)).data).not.toHaveProperty('country')
+    })
+  })
 })
