@@ -20,6 +20,9 @@ services:
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
       DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
       DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
+      COUNTRY_HEADER: ${COUNTRY_HEADER:-}
+      GEO_TRUST_HEADER: ${GEO_TRUST_HEADER:-}
+      GEOIP_DB_PATH: ${GEOIP_DB_PATH:-}
     depends_on:
       postgres:
         condition: service_healthy
