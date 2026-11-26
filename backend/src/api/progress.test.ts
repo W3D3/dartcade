@@ -18,16 +18,22 @@ vi.mock('../db/progression.js', () => ({
 vi.mock('../db/users.js', () => ({ getPreferences: vi.fn(), updatePreferences: vi.fn() }))
 vi.mock('../db/friends.js', () => ({ areFriends: vi.fn() }))
 vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), x01AverageSince: vi.fn() }))
-vi.mock('../db/profile.js', () => ({ profileUser: vi.fn(), modeCounts: vi.fn(), headToHead: vi.fn(), recentGames: vi.fn() }))
+vi.mock('../db/profile.js', () => ({
+  profileUser: vi.fn(),
+  modeCounts: vi.fn(),
+  headToHead: vi.fn(),
+  recentGames: vi.fn(),
+  seatRows: vi.fn(),
+}))
 
 import { flagEnabled } from '../flags/index.js'
 import { challengesView, claim, ensureSets } from '../progression/challengeSets.js'
 import { gameLines, getProgress, getStreak, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
-import { DEFAULT_EQUIPPED, PERKS, levelPerks } from '../shared/progression.js'
+import { DEFAULT_EQUIPPED, levelPerks } from '../shared/progression.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
 import { areFriends } from '../db/friends.js'
 import { getRatings, x01AverageSince } from '../db/ranked.js'
-import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
+import { headToHead, modeCounts, profileUser, recentGames, seatRows } from '../db/profile.js'
 
 const app = () => {
   const a = createFastify()
@@ -77,6 +83,13 @@ beforeEach(() => {
     ])
   vi.mocked(headToHead).mockReset().mockResolvedValue({ wins: 1, losses: 2 })
   vi.mocked(recentGames).mockReset().mockResolvedValue([])
+  vi.mocked(seatRows)
+    .mockReset()
+    .mockResolvedValue([
+      { mode: 'x01', placement: 1, seats: 2, stats: { pointsScored: 300, dartsThrown: 18 } },
+      { mode: 'x01', placement: 2, seats: 2, stats: { pointsScored: 150, dartsThrown: 18 } },
+      { mode: 'atc', placement: 1, seats: 1, stats: {} },
+    ])
   const row = {
     period: 'daily' as const,
     periodKey: '2026-10-21',
@@ -190,7 +203,7 @@ describe('/api/progress', () => {
     expect((await put({ celebration: 'frame.bronze' })).statusCode).toBe(409)
   })
 
-  it("shows a stranger's profile without their streak, XP or collection", async () => {
+  it("shows a stranger's profile without their streak or XP", async () => {
     const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toMatchObject({
@@ -201,9 +214,12 @@ describe('/api/progress', () => {
       level: 14,
       streak: null,
       xp: null,
-      collection: null,
       favourite: 'x01',
       matches: 23,
+      playsMost: [
+        { mode: 'x01', games: 20 },
+        { mode: 'atc', games: 3 },
+      ],
       average: 61.2,
       country: 'AT',
       headToHead: { wins: 1, losses: 2 },
@@ -227,10 +243,14 @@ describe('/api/progress', () => {
   it("shows a friend's streak", async () => {
     vi.mocked(areFriends).mockResolvedValue(true)
     const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
-    expect(JSON.parse(res.body)).toMatchObject({ relation: 'friend', streak: 0, xp: null })
+    expect(JSON.parse(res.body)).toMatchObject({
+      relation: 'friend',
+      streak: 0,
+      xp: null,
+    })
   })
 
-  it('shows your own XP and collection, and no head-to-head', async () => {
+  it('shows your own XP, and no head-to-head', async () => {
     vi.mocked(profileUser).mockResolvedValue({
       id: 'chris',
       name: 'Chris',
@@ -245,23 +265,34 @@ describe('/api/progress', () => {
       relation: 'self',
       xp: 6780,
       headToHead: null,
-      // Leaving out the ten challenge pictures nothing unlocks yet
-      collection: { unlocked: levelPerks(1).length + 2, total: PERKS.length - 10 },
     })
   })
 
-  it('counts a challenge reward you hold in your collection', async () => {
-    vi.mocked(unlockedPerks).mockResolvedValue(['title.rookie', 'picture.frost'])
-    vi.mocked(profileUser).mockResolvedValue({
-      id: 'chris',
-      name: 'Chris',
-      createdAt: new Date(),
-      avatar: { kind: 'none' },
-      equipped: null,
-      country: null,
-      ban: null,
+  describe('per-mode stats, the profile Stats tab', () => {
+    const modes = async (url = '/api/users/anna/mode-stats') => JSON.parse((await app().inject({ method: 'GET', url })).body).modes
+
+    it('gives a stranger, a friend and yourself the same blocks, the most played first', async () => {
+      const seen = async () => (await modes()).map((m: { mode: string; games: number }) => [m.mode, m.games])
+      expect(await seen()).toEqual([
+        ['x01', 2],
+        ['atc', 1],
+      ])
+      vi.mocked(areFriends).mockResolvedValue(true)
+      expect(await seen()).toEqual([
+        ['x01', 2],
+        ['atc', 1],
+      ])
+      expect(seatRows).toHaveBeenCalledWith(expect.anything(), 'anna')
+      expect((await modes('/api/users/chris/mode-stats')).length).toBe(2)
     })
-    const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
-    expect(JSON.parse(res.body).collection).toEqual({ unlocked: 2, total: PERKS.length - 9 })
+
+    it('is empty without games, 404 for no such player or without progression', async () => {
+      vi.mocked(seatRows).mockResolvedValue([])
+      expect(await modes()).toEqual([])
+      vi.mocked(profileUser).mockResolvedValue(undefined)
+      expect((await app().inject({ method: 'GET', url: '/api/users/nobody/mode-stats' })).statusCode).toBe(404)
+      vi.mocked(flagEnabled).mockResolvedValue(false)
+      expect((await app().inject({ method: 'GET', url: '/api/users/anna/mode-stats' })).statusCode).toBe(404)
+    })
   })
 })

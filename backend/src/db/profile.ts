@@ -1,9 +1,11 @@
 // What a player's profile (popup and page) shows about them, from the viewer's side.
+import { z } from 'zod'
 import { sql, type Kysely, type NotNull } from 'kysely'
 import { gameCounts } from './counts.js'
 import type { Database } from './schema.js'
 import { toAvatar, type Avatar } from './users.js'
 import { activeBan, type PublicBan } from '../shared/bans.js'
+import type { SeatRow } from '../stats/profileModes.js'
 
 /** Name, joined, their picture, the stored look (user.preferences.equipped) and the ban in force (never its note). */
 export async function profileUser(
@@ -70,6 +72,23 @@ export async function modeCounts(db: Kysely<Database>, userId: string): Promise<
     .orderBy('gs.game_id')
     .execute()
   return rows.map(r => ({ mode: r.game_id, games: r.games }))
+}
+
+const SeatStats = z.record(z.string(), z.number()).catch({})
+
+/** The player's seat in every finished game that counts, for the per-mode stats: one query for all modes. */
+export async function seatRows(db: Kysely<Database>, userId: string): Promise<SeatRow[]> {
+  const rows = await counted(db)
+    .select([
+      'gs.game_id',
+      'gp.placement',
+      'gp.stats',
+      sql<number>`(SELECT count(*)::int FROM game_players p WHERE p.session_id = gs.id)`.as('seats'),
+    ])
+    .where('gp.user_id', '=', userId)
+    .$narrowType<{ placement: NotNull }>()
+    .execute()
+  return rows.map(r => ({ mode: r.game_id, placement: r.placement, seats: r.seats, stats: SeatStats.parse(r.stats) }))
 }
 
 /** `viewer`'s record against `other`: games both played, won by whoever placed higher. */

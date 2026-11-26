@@ -6273,7 +6273,7 @@
       "get": {
         "operationId": "getPlayerProfile",
         "summary": "A player's profile: their look, level and rank, stats, and what the viewer may see",
-        "description": "The look, level, rank and stats are public. The day streak shows to friends and yourself; XP and the collection to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).",
+        "description": "The look, level, rank and stats are public. The day streak shows to friends and yourself; XP to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).",
         "tags": [
           "progress"
         ],
@@ -6284,6 +6284,61 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PlayerProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/mode-stats": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPlayerModeStats",
+        "summary": "A player's stats per game mode, for the Stats tab of their profile",
+        "description": "One block per game mode with a finished game that counts (no invalidated, handicap or mission games), the most played first. Public like the rest of the profile's stats. Read when the tab opens, not with the profile.",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The blocks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "modes"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "modes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ProfileModeStats"
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -21762,7 +21817,6 @@
           "playsMost",
           "recent",
           "xp",
-          "collection",
           "ban"
         ],
         "additionalProperties": false,
@@ -21946,26 +22000,6 @@
             "nullable": true,
             "description": "Yourself only"
           },
-          "collection": {
-            "type": "object",
-            "nullable": true,
-            "description": "Yourself only",
-            "required": [
-              "unlocked",
-              "total"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "unlocked": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "total": {
-                "type": "integer",
-                "minimum": 0
-              }
-            }
-          },
           "ban": {
             "description": "The ban in force (its public category and end); null if none",
             "type": "object",
@@ -21984,6 +22018,58 @@
                 "format": "date-time",
                 "nullable": true,
                 "description": "When it ends; null for good"
+              }
+            }
+          }
+        }
+      },
+      "ProfileModeStats": {
+        "type": "object",
+        "required": [
+          "mode",
+          "games",
+          "tiles"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "games": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tiles": {
+            "type": "array",
+            "description": "Only stats the mode really has, in display order",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "label",
+                "value",
+                "format"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "number",
+                  "description": "A fraction (0 to 1) for percent"
+                },
+                "format": {
+                  "type": "string",
+                  "enum": [
+                    "int",
+                    "decimal",
+                    "percent"
+                  ]
+                }
               }
             }
           }

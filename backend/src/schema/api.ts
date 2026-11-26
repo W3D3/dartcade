@@ -2332,9 +2332,31 @@ export interface paths {
         };
         /**
          * A player's profile: their look, level and rank, stats, and what the viewer may see
-         * @description The look, level, rank and stats are public. The day streak shows to friends and yourself; XP and the collection to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).
+         * @description The look, level, rank and stats are public. The day streak shows to friends and yourself; XP to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).
          */
         get: operations["getPlayerProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/mode-stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * A player's stats per game mode, for the Stats tab of their profile
+         * @description One block per game mode with a finished game that counts (no invalidated, handicap or mission games), the most played first. Public like the rest of the profile's stats. Read when the tab opens, not with the profile.
+         */
+        get: operations["getPlayerModeStats"];
         put?: never;
         post?: never;
         delete?: never;
@@ -6958,11 +6980,6 @@ export interface components {
             }[];
             /** @description Yourself only */
             xp: number | null;
-            /** @description Yourself only */
-            collection: {
-                unlocked: number;
-                total: number;
-            } | null;
             /** @description The ban in force (its public category and end); null if none */
             ban: {
                 category: components["schemas"]["BanCategory"];
@@ -6972,6 +6989,19 @@ export interface components {
                  */
                 until: string | null;
             } | null;
+        };
+        ProfileModeStats: {
+            mode: string;
+            games: number;
+            /** @description Only stats the mode really has, in display order */
+            tiles: {
+                id: string;
+                label: string;
+                /** @description A fraction (0 to 1) for percent */
+                value: number;
+                /** @enum {string} */
+                format: "int" | "decimal" | "percent";
+            }[];
         };
         ChallengeSet: {
             /**
@@ -11838,6 +11868,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PlayerProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPlayerModeStats: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The blocks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        modes: components["schemas"]["ProfileModeStats"][];
+                    };
                 };
             };
             401: components["responses"]["Unauthorized"];
