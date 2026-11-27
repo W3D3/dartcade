@@ -1,27 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { stepDetail, stepTitle } from './describe.js'
 import { suggestDifficulty } from './difficulty.js'
-import { OFFICIAL_MISSIONS } from './official.js'
-import { MissionSchema, StepSchema } from './types.js'
-
-const official = (id: string) => {
-  const m = OFFICIAL_MISSIONS.find(o => o.id === `official-${id}`)
-  if (!m) throw new Error(id)
-  return m.mission
-}
+import { GAUNTLET } from './fixtures.js'
+import { StepSchema } from './types.js'
 
 describe('step titles', () => {
-  it('titles the official missions as the Missions artboard does', () => {
-    expect(official('tungsten-gauntlet').steps.map(stepTitle)).toEqual([
+  it('titles a mission as the Missions artboard does', () => {
+    expect(GAUNTLET.steps.map(stepTitle)).toEqual([
       'Check out 170 in 8 darts',
       'Hit S20 9 times in a row',
       'D11 → Bull → D6 within 9 darts',
     ])
-    expect(official('around-the-clock-sprint').steps.map(stepTitle)).toEqual(['1–20 + Bull within 40 darts'])
-    expect(official('bull-rush').steps.map(stepTitle)).toEqual(['Hit 5 bulls', 'Hit 2 inner bulls', 'Check out 50 in 3 darts'])
-    expect(official('double-trouble-drill').steps.map(stepTitle)[0]).toBe('Hit every double once')
-    expect(official('ton-machine').steps.map(stepTitle)).toEqual(['Score 100+ in 5 visits in a row', 'Keep a 60 average over 10 visits'])
-    expect(official('shanghai-night').steps.map(stepTitle)[0]).toBe('S20, D20, T20 in one visit')
   })
 
   it('titles marks, scores and legs', () => {
@@ -34,7 +23,7 @@ describe('step titles', () => {
   })
 
   it('details a step as the builder does', () => {
-    const [checkout, streak, route] = official('tungsten-gauntlet').steps
+    const [checkout, streak, route] = GAUNTLET.steps
     expect(stepDetail(checkout)).toBe('Checkout · in 8 darts or fewer · double out')
     expect(stepDetail(streak)).toBe('Hit targets · a miss resets the streak')
     expect(stepDetail(route)).toBe('Hit targets · in this order · within 9 darts')
@@ -43,7 +32,7 @@ describe('step titles', () => {
 
 describe('difficulty suggestion', () => {
   it('suggests Hard for the Tungsten Gauntlet, as the builder artboard does', () => {
-    expect(suggestDifficulty(official('tungsten-gauntlet'))).toBe('hard')
+    expect(suggestDifficulty(GAUNTLET)).toBe('hard')
   })
 
   it('easy for a relaxed step, expert for nine marks in three darts', () => {
@@ -55,12 +44,5 @@ describe('difficulty suggestion', () => {
   it('Start over and a short limit make it harder', () => {
     const step = StepSchema.parse({ type: 'hit', targets: ['20'], hits: 3, inARow: false, order: 'any' })
     expect(suggestDifficulty({ steps: [step], onFail: 'restart', timeLimit: 300 })).toBe('hard')
-  })
-})
-
-describe('the official missions', () => {
-  it('are valid missions with unique ids', () => {
-    for (const { mission } of OFFICIAL_MISSIONS) expect(MissionSchema.parse(mission)).toEqual(mission)
-    expect(new Set(OFFICIAL_MISSIONS.map(o => o.id)).size).toBe(OFFICIAL_MISSIONS.length)
   })
 })

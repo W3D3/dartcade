@@ -9867,6 +9867,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "404": {
             "$ref": "#/components/responses/NotFound"
           },
@@ -9924,7 +9927,7 @@
       },
       "put": {
         "operationId": "updateMission",
-        "summary": "Change a mission (its author; an official one, admins). A running game keeps the mission it started with",
+        "summary": "Change a mission (its author; an official one, admins; only admins set `official`). A running game keeps the mission it started with",
         "tags": [
           "missions"
         ],
@@ -9960,6 +9963,16 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "'hidden': a hidden mission can't be made official until a moderator restores it; 'limit reached': making an official mission the admin's own again, at the cap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       },
@@ -10141,50 +10154,6 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
-          }
-        }
-      }
-    },
-    "/api/admin/missions": {
-      "post": {
-        "operationId": "createOfficialMission",
-        "summary": "Make an official mission (\"by Dartcade\"; admins only). Everyone sees it",
-        "tags": [
-          "missions",
-          "admin"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/OfficialMissionWrite"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "Made",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MissionCard"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
           }
         }
       }
@@ -23804,18 +23773,10 @@
           },
           "visibility": {
             "$ref": "#/components/schemas/MissionVisibility"
-          }
-        }
-      },
-      "OfficialMissionWrite": {
-        "type": "object",
-        "required": [
-          "mission"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "mission": {
-            "$ref": "#/components/schemas/Mission"
+          },
+          "official": {
+            "type": "boolean",
+            "description": "Admins only (403 for anyone else, whatever the value). On a change true makes the mission official (by Dartcade, everyone's, no owner), false makes an official one the admin's own again with the given visibility; left out it stays as it is. On a create true makes an official mission."
           }
         }
       },

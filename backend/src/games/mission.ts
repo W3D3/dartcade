@@ -23,7 +23,6 @@ import {
   tick,
 } from '../shared/missions/run.js'
 import { MissionSchema, type Mission, type MissionDart } from '../shared/missions/types.js'
-import { OFFICIAL_MISSIONS } from '../shared/missions/official.js'
 import type { RunResult } from '../shared/missions/highscores.js'
 import { rankSeats } from './ranking.js'
 import { nextTurn } from './turns.js'
@@ -83,14 +82,24 @@ function compareSeats(s: MissionState, a: number, b: number): number {
 
 const placementsOf = (s: MissionState) => rankSeats(s.runs.length, null, (a, b) => compareSeats(s, a, b))
 
-const first = OFFICIAL_MISSIONS[0]
+// Only the registry needs a default; a real game always carries its mission in the config
+const placeholder: Mission = {
+  name: 'Mission',
+  description: '',
+  difficulty: 'easy',
+  order: 'any',
+  onFail: 'retry',
+  pause: false,
+  rankBy: 'time',
+  steps: [{ type: 'hit', targets: ['B'], hits: 1, inARow: false, order: 'any' }],
+}
 
 export const missionModule: GameModule<MissionState, MissionConfig, MissionView, 'mission', MissionDetail> = {
   id: 'mission',
   version: 1,
   // The deciding dart stops the clock; the board's takeout ends the game without a Finish button
   noFinishHold: true,
-  defaultConfig: { missionId: first.id, test: false, mission: first.mission, highscores: [], bests: {} },
+  defaultConfig: { missionId: 'placeholder', test: false, mission: placeholder, highscores: [], bests: {} },
 
   validate(cfg: MissionConfig, players: Player[]): string | null {
     if (players.length < 1) return 'At least 1 player'
