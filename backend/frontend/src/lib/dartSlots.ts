@@ -163,6 +163,17 @@ export function missionSlots(o: { darts: ThrownDart[]; chips: readonly { gain: n
   return [...done, ...(o.locked ? notThrown(done.length) : openSlots(done.length, []))]
 }
 
+/** Dungeon: the thrown darts with their score, or once the visit resolved the damage each dealt. */
+export function dungeonSlots(o: { darts: ThrownDart[]; damage: readonly number[] | null }): Slot[] {
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => {
+    const score = d.score ?? 0
+    const damage = o.damage?.at(i)
+    const slot = thrownSlot(d, i, score > 0, damage === undefined ? String(score) : `${damage} dmg`)
+    return damage === undefined ? slot : { ...slot, aria: `Dart ${i + 1}: ${slot.label}, ${damage} damage` }
+  })
+  return [...done, ...openSlots(done.length, [])]
+}
+
 /** A visit that is over early: the slots from `from` on are not thrown, with no next dart. */
 function notThrown(from: number): Slot[] {
   return openSlots(from, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${from + k + 1}: not thrown` }))
