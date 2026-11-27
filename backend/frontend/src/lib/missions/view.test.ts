@@ -11,6 +11,7 @@ import {
   fmtClock,
   highscoreRank,
   liveElapsed,
+  outcomeLine,
   personalBest,
   resultRows,
   runLine,
@@ -82,6 +83,7 @@ const card = (o: Partial<MissionCard> = {}): MissionCard => ({
   plays: 3,
   yourBest: null,
   friendsBest: null,
+  tries: 0,
   hidden: null,
   canEdit: false,
   createdAt: '2026-11-20T10:00:00Z',
@@ -102,9 +104,11 @@ describe('the list', () => {
     expect(cardPills(card({ official: true, mission: sprint })).map(p => p.label)).toEqual(['1 step', 'Official'])
   })
 
-  it('bests: a time, darts for a darts race, Not tried, and a dash on your own untried mission', () => {
+  it('bests: a time, darts for a darts race, tried but not completed, Not tried, and a dash on your own untried mission', () => {
     const best = { userId: 'me', name: 'Me', timeMs: 462_000, darts: 38, achievedAt: '2026-11-21T10:00:00Z' }
-    expect(bests(card({ yourBest: best }), 'me')).toEqual({ yours: '7:42', friends: '—' })
+    expect(bests(card({ yourBest: best, tries: 4 }), 'me')).toEqual({ yours: '7:42', tried: null, friends: '—' })
+    expect(bests(card({ tries: 2 }), 'me')).toEqual({ yours: 'Not completed', tried: 'Tried 2×', friends: '—' })
+    expect(bests(card({ tries: 1, author: { id: 'me', name: 'Me' } }), 'me').yours).toBe('Not completed')
     expect(bests(card({ yourBest: best, mission: { ...mission, rankBy: 'darts' } }), 'me').yours).toBe('38 darts')
     expect(bests(card(), 'me').yours).toBe('Not tried')
     expect(bests(card({ author: { id: 'me', name: 'Me' } }), 'me').yours).toBe('—')
@@ -179,6 +183,12 @@ describe('the play screen', () => {
 })
 
 describe('the result', () => {
+  it('says where a run that did not complete ended', () => {
+    expect(outcomeLine({ mission }, playing({ status: 'failed', failure: 'time', active: 1 }))).toBe('Time ran out at step 2 of 3')
+    expect(outcomeLine({ mission }, playing({ status: 'failed', failure: 'gave_up', active: 0 }))).toBe('Gave up at step 1 of 3')
+    expect(outcomeLine({ mission }, playing({ status: 'completed' }))).toBeNull()
+  })
+
   it('rows by place, each with its outcome', () => {
     const game = {
       mission,

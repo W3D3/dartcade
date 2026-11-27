@@ -78,12 +78,17 @@ export const authorLabel = (card: Pick<MissionCard, 'author' | 'official'>, view
 export const authorName = (card: Pick<MissionCard, 'author' | 'official'>): string =>
   card.official ? 'Dartcade' : (card.author?.name ?? 'Player')
 
-/** The card's Your best and Friends' best: a mission of your own you never finished shows a dash, not "Not tried". */
-export function bests(card: MissionCard, viewerId: string | null): { yours: string; friends: string } {
+/**
+ * The card's Your best and Friends' best. Without a completed run Your best says whether you tried
+ * (`tried`: how often); a mission of your own you never played shows a dash, not "Not tried".
+ */
+export function bests(card: MissionCard, viewerId: string | null): { yours: string; tried: string | null; friends: string } {
   const rankBy = card.mission.rankBy
   const own = card.author?.id === viewerId
+  const untried = own ? '—' : 'Not tried'
   return {
-    yours: card.yourBest ? bestValue(rankBy, card.yourBest) : own ? '—' : 'Not tried',
+    yours: card.yourBest ? bestValue(rankBy, card.yourBest) : card.tries > 0 ? 'Not completed' : untried,
+    tried: !card.yourBest && card.tries > 0 ? `Tried ${card.tries}×` : null,
     friends: card.friendsBest ? bestValue(rankBy, card.friendsBest) : '—',
   }
 }
@@ -216,6 +221,13 @@ export function runLine(game: Pick<MissionGame, 'mission'>, run: MissionRun): st
 // ── The result ────────────────────────────────────────────────────────────
 
 export type ResultRow = { seat: number; name: string; place: number | null; steps: string; time: string; darts: number; outcome: string }
+
+/** What happened to a run that did not complete: "Time ran out at step 2 of 3"; null for one that completed or still plays. */
+export function outcomeLine(game: Pick<MissionGame, 'mission'>, run: Pick<MissionRun, 'status' | 'failure' | 'active'>): string | null {
+  if (run.status !== 'failed') return null
+  const where = `at step ${run.active + 1} of ${game.mission.steps.length}`
+  return run.failure === 'time' ? `Time ran out ${where}` : `Gave up ${where}`
+}
 
 const OUTCOME = { completed: 'Completed', time: 'Time ran out', gave_up: 'Gave up', playing: 'Not finished' } as const
 

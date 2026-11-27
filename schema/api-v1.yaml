@@ -9637,7 +9637,7 @@ components:
         achievedAt: { type: string, format: date-time }
     MissionCard:
       type: object
-      required: [id, mission, visibility, official, author, plays, yourBest, friendsBest, hidden, canEdit, createdAt, updatedAt]
+      required: [id, mission, visibility, official, author, plays, yourBest, friendsBest, tries, hidden, canEdit, createdAt, updatedAt]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -9656,6 +9656,7 @@ components:
         plays: { type: integer, minimum: 0, description: 'Games of it started, test runs left out' }
         yourBest: { anyOf: [{ $ref: '#/components/schemas/MissionBest' }, { type: string, nullable: true, enum: [null] }] }
         friendsBest: { anyOf: [{ $ref: '#/components/schemas/MissionBest' }, { type: string, nullable: true, enum: [null] }] }
+        tries: { type: integer, minimum: 0, description: "The viewer's finished games of it (completed or not), test runs left out" }
         hidden:
           type: object
           nullable: true

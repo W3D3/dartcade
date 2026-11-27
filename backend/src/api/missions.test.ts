@@ -396,4 +396,53 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     const card = (await call('GET', `/api/missions/${id}`, 'owner')).json()
     expect(card).toMatchObject({ yourBest: null, friendsBest: { name: 'Fred', darts: 30 } })
   })
+
+  it("counts the viewer's finished games of a mission as tries, completed or not; never a test run, an unfinished game or someone else's", async () => {
+    const id = await own('public')
+    const games: [string, string, 'finished' | 'active', boolean][] = [
+      ['t1', 'stranger', 'finished', false],
+      ['t2', 'stranger', 'finished', false],
+      ['t3', 'stranger', 'active', false],
+      ['t4', 'stranger', 'finished', true],
+      ['t5', 'friend', 'finished', false],
+    ]
+    for (const [gid, user, status, test] of games) {
+      await db
+        .insertInto('game_sessions')
+        .values({
+          id: gid,
+          game_id: 'mission',
+          owner_user_id: user,
+          config: JSON.stringify({ missionId: id, test }),
+          status,
+          finished_at: status === 'finished' ? new Date() : null,
+        })
+        .execute()
+      await db
+        .insertInto('game_players')
+        .values({
+          session_id: gid,
+          seat: 0,
+          name: user,
+          user_id: user,
+          placement: 1,
+          stats: '{}',
+          controller_user_id: user,
+          board_db_id: null,
+        })
+        .execute()
+    }
+    const card = (await call('GET', `/api/missions/${id}`, 'stranger')).json()
+    expect(card).toMatchObject({ yourBest: null, tries: 2 })
+    const list = (await call('GET', '/api/missions?filter=all', 'owner')).json()
+    expect(list.missions.find((m: { id: string }) => m.id === id)).toMatchObject({ tries: 0 })
+    await db
+      .deleteFrom('game_sessions')
+      .where(
+        'id',
+        'in',
+        games.map(g => g[0]),
+      )
+      .execute()
+  })
 })

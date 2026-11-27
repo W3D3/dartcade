@@ -116,7 +116,7 @@
     {@render pills()}
     {@render hiddenNote()}
     <div class="flex items-center gap-2 text-small text-text-muted">
-      <span>Your best <b class="font-display text-body-lg text-text">{best.yours}</b></span>
+      <span>Your best <b class="font-display text-body-lg text-text">{best.tried ?? best.yours}</b></span>
       <span class="ml-auto">Friends’ best <b class="font-display text-body-lg text-text">{best.friends}</b></span>
       <ChevronRight size={16} class="text-text-dim" aria-hidden="true" />
     </div>
@@ -141,7 +141,8 @@
     </ol>
     <div class="mt-auto flex items-center gap-2.5 border-t border-surface-paused pt-2.5">
       <span class="flex flex-1 flex-col"
-        ><span class="text-caption text-text-muted">Your best</span><span class="font-display text-lead font-bold">{best.yours}</span></span
+        ><span class="text-caption text-text-muted">Your best</span><span class="font-display text-lead font-bold">{best.yours}</span
+        >{#if best.tried}<span class="text-caption text-text-muted">{best.tried}</span>{/if}</span
       >
       <span class="flex flex-1 flex-col"
         ><span class="text-caption text-text-muted">Friends’ best</span><span class="font-display text-lead font-bold">{best.friends}</span

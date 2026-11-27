@@ -98,6 +98,7 @@ const toCard = (c: MissionCard, v: MissionViewer) => ({
   plays: c.plays,
   yourBest: toBest(c.yourBest),
   friendsBest: toBest(c.friendsBest),
+  tries: c.tries,
   hidden: c.hiddenAt ? { at: c.hiddenAt.toISOString(), reason: c.hiddenReason ?? '' } : null,
   canEdit: canWrite(c, v),
   createdAt: c.createdAt.toISOString(),
