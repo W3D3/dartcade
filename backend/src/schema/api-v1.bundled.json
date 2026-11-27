@@ -13130,12 +13130,8 @@
         "type": "object",
         "required": [
           "mode",
-          "outcome",
-          "difficulty",
-          "floors",
-          "cleared",
-          "gold",
-          "seats"
+          "summary",
+          "darts"
         ],
         "additionalProperties": false,
         "properties": {
@@ -13145,81 +13141,238 @@
               "dungeon"
             ]
           },
-          "outcome": {
-            "type": "string",
-            "enum": [
-              "victory",
-              "defeat",
-              null
-            ],
-            "nullable": true,
-            "description": "Null for a run that was given up"
-          },
-          "difficulty": {
-            "type": "string",
-            "enum": [
-              "easy",
-              "medium",
-              "hard",
-              "expert"
-            ]
-          },
-          "floors": {
-            "type": "integer",
-            "minimum": 1,
-            "description": "Floors in the act; the last is the boss"
-          },
-          "cleared": {
-            "type": "integer",
-            "minimum": 0,
-            "description": "Rooms the party finished"
-          },
-          "gold": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "seats": {
+          "darts": {
             "type": "array",
-            "description": "One hero per seat, in seat order, as the run ended",
             "items": {
-              "type": "object",
-              "required": [
-                "classId",
-                "hp",
-                "maxHp",
-                "damage",
-                "bestVisit",
-                "artifacts"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "classId": {
-                  "type": "string",
-                  "nullable": true
-                },
-                "hp": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "maxHp": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "damage": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "description": "Damage dealt in the run"
-                },
-                "bestVisit": {
-                  "type": "integer",
-                  "minimum": 0
-                },
-                "artifacts": {
-                  "type": "array",
-                  "items": {
-                    "type": "string"
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Darts each seat threw, in seat order"
+          },
+          "summary": {
+            "type": "object",
+            "description": "The run summary, as the end screen shows it (shared/dungeon/summary.ts; DungeonSummary in game-ws-v1.json)",
+            "required": [
+              "outcome",
+              "difficulty",
+              "floors",
+              "cleared",
+              "gold",
+              "path",
+              "heroes",
+              "best"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "victory",
+                  "defeat",
+                  null
+                ],
+                "nullable": true,
+                "description": "Null for a run that was given up"
+              },
+              "difficulty": {
+                "type": "string",
+                "enum": [
+                  "easy",
+                  "medium",
+                  "hard",
+                  "expert"
+                ]
+              },
+              "floors": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cleared": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "gold": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "path": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "lane",
+                    "type"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "lane": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "type": {
+                      "type": "string",
+                      "enum": [
+                        "fight",
+                        "elite",
+                        "boss",
+                        "treasure",
+                        "rest",
+                        "event",
+                        "shop"
+                      ]
+                    }
+                  }
+                }
+              },
+              "heroes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "seat",
+                    "classId",
+                    "hp",
+                    "maxHp",
+                    "artifacts",
+                    "damage",
+                    "bestVisit",
+                    "healed",
+                    "blocked",
+                    "bestDart",
+                    "damageByFloor"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "seat": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "classId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "hp": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "maxHp": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "artifacts": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "damage": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bestVisit": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "healed": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "blocked": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "bestDart": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "number",
+                        "ring",
+                        "damage"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "number": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ring": {
+                          "type": "string",
+                          "enum": [
+                            "single",
+                            "double",
+                            "treble",
+                            "bull",
+                            "bullseye",
+                            "miss"
+                          ]
+                        },
+                        "damage": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "damageByFloor": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
+                  }
+                }
+              },
+              "best": {
+                "type": "object",
+                "nullable": true,
+                "required": [
+                  "seat",
+                  "darts",
+                  "damage",
+                  "enemy"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "seat": {
+                    "type": "integer",
+                    "minimum": 0
                   },
-                  "description": "Artifact ids, in the order the hero got them"
+                  "darts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "number",
+                        "ring"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "number": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ring": {
+                          "type": "string",
+                          "enum": [
+                            "single",
+                            "double",
+                            "treble",
+                            "bull",
+                            "bullseye",
+                            "miss"
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "damage": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "enemy": {
+                    "type": "string",
+                    "nullable": true
+                  }
                 }
               }
             }

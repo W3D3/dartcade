@@ -33,7 +33,7 @@ const start = (n = 1, seed = 5) => {
   let s = game.init(cfg, players(n), seededRng(seed))
   for (let seat = 0; seat < n; seat++)
     s = act(s, { type: 'dungeon_pick_class', seat, classId: ['brawler', 'archer', 'mage', 'guardian'][seat] })
-  return s
+  return act(s, { type: 'dungeon_start' })
 }
 
 describe('config', () => {
@@ -47,14 +47,28 @@ describe('config', () => {
 })
 
 describe('the module', () => {
-  it('starts in setup with darts locked and moves to the map once every hero has a class', () => {
+  it("starts in setup with darts locked; the host's start enters the floor 1 fight", () => {
     const s = game.init(cfg, players(2), seededRng(1))
-    expect(game.view(s, players(2))).toMatchObject({ phase: 'setup', visitLocked: true, winner: null, currentPlayer: 0 })
-    expect(game.view(start(2), players(2))).toMatchObject({ phase: 'map', visitLocked: false, currentPlayer: 0, nextPlayer: 0 })
+    expect(game.view(s, players(2))).toMatchObject({
+      phase: 'setup',
+      visitLocked: true,
+      winner: null,
+      currentPlayer: 0,
+      map: { floors: [] },
+    })
+    expect(game.view(start(2), players(2))).toMatchObject({
+      phase: 'battle',
+      visitLocked: false,
+      currentPlayer: 0,
+      nextPlayer: 1,
+      floor: 1,
+      room: 2,
+      path: [2],
+    })
   })
 
-  it('reads board darts: a vote on the left half, then a fight', () => {
-    let s = visit(start(), [[19, 1]])
+  it('reads board darts in a fight', () => {
+    let s = start()
     const v = game.view(s, players(1))
     expect(v.phase).toBe('battle')
     expect(v.battle?.target).toBe('e0')
@@ -68,20 +82,19 @@ describe('the module', () => {
   })
 
   it('locks the visit at its third dart and names who is up next', () => {
-    let s = visit(start(2), [[19, 1]])
-    s = visit(s, [[19, 1]])
+    let s = start(2)
     s = [dart(1, 1, 0), dart(1, 1, 1), dart(1, 1, 2)].reduce((st, e) => game.onBoardEvent(st, e).state, game.onBoardEvent(s, opened).state)
     expect(game.view(s, players(2))).toMatchObject({ visitLocked: true, currentPlayer: 0, nextPlayer: 1 })
   })
 
   it('replays the same inputs to the same state, the seed deciding the map', () => {
-    const a = visit(visit(start(1, 9), [[19, 1]]), [
+    const a = visit(start(1, 9), [
       [20, 2],
       [5, 1],
       [1, 3],
     ])
     expect(
-      visit(visit(start(1, 9), [[19, 1]]), [
+      visit(start(1, 9), [
         [20, 2],
         [5, 1],
         [1, 3],
@@ -91,7 +104,7 @@ describe('the module', () => {
   })
 
   it('a corrected last dart refolds the open visit cleanly', () => {
-    const base = game.onBoardEvent(visit(start(), [[19, 1]]), opened).state
+    const base = game.onBoardEvent(start(), opened).state
     const two = [dart(20, 1, 0), dart(20, 1, 1)].reduce((st, e) => game.onBoardEvent(st, e).state, base)
     const misread = game.onBoardEvent(two, dart(7, 1, 2)).state
     const fixed = game.onBoardEvent(two, dart(19, 1, 2)).state
@@ -100,16 +113,15 @@ describe('the module', () => {
   })
 
   it('summarizes an unfinished run (a forfeit) with every seat sharing the place', () => {
-    const s = visit(visit(start(2), [[19, 1]]), [[19, 1]])
+    const s = start(2)
     expect(game.summarize(s, { totalDarts: [2, 1], totalVisits: [2, 1] })).toEqual([
       { placement: 1, stats: { victory: 0, cleared: 0, damage: 0, bestVisit: 0, dartsThrown: 2 } },
       { placement: 1, stats: { victory: 0, cleared: 0, damage: 0, bestVisit: 0, dartsThrown: 1 } },
     ])
     expect(game.detail([], s)).toMatchObject({
       mode: 'dungeon',
-      outcome: null,
-      cleared: 0,
-      seats: [{ classId: 'brawler' }, { classId: 'archer' }],
+      darts: [0, 0],
+      summary: { outcome: null, cleared: 0, heroes: [{ classId: 'brawler' }, { classId: 'archer' }] },
     })
   })
 
@@ -154,7 +166,7 @@ describe('the view matches schema/game-ws-v1.json in every phase', () => {
     [
       'battle with a trace',
       () =>
-        visit(visit(start(), [[19, 1]]), [
+        visit(start(), [
           [20, 3],
           [20, 2],
           [25, 1],

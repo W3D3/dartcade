@@ -5,7 +5,18 @@ import { defencesAt } from '../shared/dungeon/content/enemies.js'
 import { intentOf, intentValue } from '../shared/dungeon/enemyTurn.js'
 import { hitOf } from '../shared/dungeon/hit.js'
 import { DEFAULT_CONFIG, DIFFICULTIES, DUNGEON_RULES, FLOOR_COUNTS, rulesOf, type DungeonConfig } from '../shared/dungeon/rules.js'
-import { endVisit, openVisit, pickClass, pickTreasure, startRun, throwDart, voteEvent, type RunState } from '../shared/dungeon/run.js'
+import {
+  beginRun,
+  endVisit,
+  openVisit,
+  pickClass,
+  pickTreasure,
+  startRun,
+  throwDart,
+  voteEvent,
+  type RunState,
+} from '../shared/dungeon/run.js'
+import { runSummary } from '../shared/dungeon/summary.js'
 import { alive } from '../shared/dungeon/state.js'
 import { seededRng } from '../shared/rng.js'
 import type { ConfigFieldMeta, DungeonDetail, GameModule, MatchStats, Player, SeatResult, SummaryContext } from '../session/types.js'
@@ -33,7 +44,8 @@ export const configMeta: Record<keyof DungeonConfig, ConfigFieldMeta> = {
 const MATCH_STATS_ROWS = [
   row('damage', 'Damage dealt', 'integer', 'higher'),
   row('bestVisit', 'Best visit', 'integer', 'higher', { compact: true }),
-  row('artifacts', 'Artifacts', 'integer', 'higher', { compact: true }),
+  row('healed', 'Healed', 'integer', 'higher', { compact: true }),
+  row('blocked', 'Blocked', 'integer', 'higher', { compact: true }),
   row('hp', 'HP left', 'integer', 'higher'),
 ]
 
@@ -95,6 +107,8 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
         return { state: pickTreasure(s, a.seat, a.index) }
       case 'dungeon_vote':
         return { state: voteEvent(s, a.seat, a.decision) }
+      case 'dungeon_start':
+        return { state: beginRun(s) }
       default:
         return { state: s }
     }
@@ -111,7 +125,8 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
       floor: s.floor,
       room: s.room,
       cleared: s.cleared,
-      map: s.map.floors,
+      map: s.map,
+      path: s.path,
       votes: scene.phase === 'map' ? scene.votes : s.heroes.map(() => null),
       currentPlayer: s.turn,
       nextPlayer: over(next) ? null : next.turn,
@@ -144,8 +159,7 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
       event: scene.phase === 'event' ? { id: scene.event, votes: scene.votes } : null,
       lastEvent: s.lastEvent,
       lastHeal: s.lastHeal,
-      damage: s.damage,
-      bestVisit: s.bestVisit,
+      summary: over(s) ? runSummary(s) : null,
     }
   },
 
@@ -156,35 +170,27 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
       stats: {
         victory: outcomeOf(s) === 'victory' ? 1 : 0,
         cleared: s.cleared,
-        damage: s.damage[h.seat],
-        bestVisit: s.bestVisit[h.seat],
+        damage: s.stats[h.seat].damage,
+        bestVisit: s.stats[h.seat].bestVisit,
         dartsThrown: ctx.totalDarts[h.seat] ?? 0,
       },
     }))
   },
 
-  detail: (_visits, s): DungeonDetail => ({
+  detail: (visits, s): DungeonDetail => ({
     mode: 'dungeon',
-    outcome: outcomeOf(s),
-    difficulty: s.cfg.difficulty,
-    floors: s.cfg.floors,
-    cleared: s.cleared,
-    gold: s.gold,
-    seats: s.heroes.map(h => ({
-      classId: h.classId,
-      hp: h.hp,
-      maxHp: h.maxHp,
-      damage: s.damage[h.seat],
-      bestVisit: s.bestVisit[h.seat],
-      artifacts: h.artifacts,
-    })),
+    summary: runSummary(s),
+    darts: s.heroes.map(h => visits.filter(v => v.seat === h.seat).reduce((n, v) => n + v.darts.length, 0)),
   }),
 
   matchStats: (_visits, s): MatchStats => ({
     rows: MATCH_STATS_ROWS,
-    seats: s.heroes.map(h => ({
-      index: h.seat,
-      values: values({ damage: s.damage[h.seat], bestVisit: s.bestVisit[h.seat], artifacts: h.artifacts.length, hp: h.hp }),
-    })),
+    seats: s.heroes.map(h => {
+      const st = s.stats[h.seat]
+      return {
+        index: h.seat,
+        values: values({ damage: st.damage, bestVisit: st.bestVisit, healed: st.healed, blocked: st.blocked, hp: h.hp }),
+      }
+    }),
   }),
 }

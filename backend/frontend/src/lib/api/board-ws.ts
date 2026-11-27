@@ -663,18 +663,21 @@ export type DungeonGame = EngineGameFields & {
    * The floor the party is on; 0 before the first room.
    */
   floor: number
-  room: DungeonSide | null
+  /**
+   * The lane of the room the party is in; null before the first room.
+   */
+  room: number | null
   /**
    * Rooms finished.
    */
   cleared: number
-  /**
-   * Floors from 1 up; each room leads to every room of the floor above.
-   */
   map: {
-    side: DungeonSide
-    type: 'fight' | 'elite' | 'boss' | 'treasure' | 'rest' | 'event' | 'shop'
-  }[][]
+    lanes: number
+    /**
+     * Floors from 1 up; a room in lane c leads to lanes c - 1 and c + 1 above. Empty until the run starts.
+     */
+    floors: DungeonMapRoom[][]
+  }
   /**
    * The map vote, per seat.
    */
@@ -748,10 +751,13 @@ export type DungeonGame = EngineGameFields & {
     amount: number
   } | null
   /**
-   * Damage dealt in the run, per seat.
+   * The lane taken on each floor, from floor 1.
    */
-  damage: number[]
-  bestVisit: number[]
+  path: number[]
+  /**
+   * Set once the run is over.
+   */
+  summary: DungeonSummary | null
 }
 export type DungeonSide = 'left' | 'right'
 /**
@@ -1394,6 +1400,10 @@ export interface ShanghaiVisit {
   score: number
   shanghai: boolean
 }
+export interface DungeonMapRoom {
+  lane: number
+  type: 'fight' | 'elite' | 'boss' | 'treasure' | 'rest' | 'event' | 'shop'
+}
 export interface DungeonHero {
   seat: number
   classId: string | null
@@ -1466,6 +1476,64 @@ export interface DungeonTraceStep {
   base: number
   mult: number
   target: string | null
+}
+/**
+ * A Dungeon run's summary: the end screen and the details page (shared/dungeon/summary.ts).
+ */
+export interface DungeonSummary {
+  /**
+   * Null for a run that was given up or is still going.
+   */
+  outcome: ('victory' | 'defeat') | null
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  floors: number
+  /**
+   * Rooms the party finished.
+   */
+  cleared: number
+  gold: number
+  /**
+   * The rooms taken, from floor 1.
+   */
+  path: DungeonMapRoom[]
+  heroes: {
+    seat: number
+    classId: string | null
+    hp: number
+    maxHp: number
+    artifacts: string[]
+    damage: number
+    bestVisit: number
+    /**
+     * HP their effects and their rest restored, across the party.
+     */
+    healed: number
+    /**
+     * Block their effects gave, across the party.
+     */
+    blocked: number
+    bestDart: {
+      number: number
+      ring: 'single' | 'double' | 'treble' | 'bull' | 'bullseye' | 'miss'
+      damage: number
+    } | null
+    /**
+     * From floor 1.
+     */
+    damageByFloor: number[]
+  }[]
+  /**
+   * The run's best visit.
+   */
+  best: {
+    seat: number
+    darts: {
+      number: number
+      ring: 'single' | 'double' | 'treble' | 'bull' | 'bullseye' | 'miss'
+    }[]
+    damage: number
+    enemy: string | null
+  } | null
 }
 /**
  * This interface was referenced by `BoardWs`'s JSON-Schema

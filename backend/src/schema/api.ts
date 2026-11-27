@@ -4504,29 +4504,54 @@ export interface components {
              * @enum {string}
              */
             mode: "dungeon";
-            /**
-             * @description Null for a run that was given up
-             * @enum {string|null}
-             */
-            outcome: "victory" | "defeat" | null;
-            /** @enum {string} */
-            difficulty: "easy" | "medium" | "hard" | "expert";
-            /** @description Floors in the act; the last is the boss */
-            floors: number;
-            /** @description Rooms the party finished */
-            cleared: number;
-            gold: number;
-            /** @description One hero per seat, in seat order, as the run ended */
-            seats: {
-                classId: string | null;
-                hp: number;
-                maxHp: number;
-                /** @description Damage dealt in the run */
-                damage: number;
-                bestVisit: number;
-                /** @description Artifact ids, in the order the hero got them */
-                artifacts: string[];
-            }[];
+            /** @description Darts each seat threw, in seat order */
+            darts: number[];
+            /** @description The run summary, as the end screen shows it (shared/dungeon/summary.ts; DungeonSummary in game-ws-v1.json) */
+            summary: {
+                /**
+                 * @description Null for a run that was given up
+                 * @enum {string|null}
+                 */
+                outcome: "victory" | "defeat" | null;
+                /** @enum {string} */
+                difficulty: "easy" | "medium" | "hard" | "expert";
+                floors: number;
+                cleared: number;
+                gold: number;
+                path: {
+                    lane: number;
+                    /** @enum {string} */
+                    type: "fight" | "elite" | "boss" | "treasure" | "rest" | "event" | "shop";
+                }[];
+                heroes: {
+                    seat: number;
+                    classId: string | null;
+                    hp: number;
+                    maxHp: number;
+                    artifacts: string[];
+                    damage: number;
+                    bestVisit: number;
+                    healed: number;
+                    blocked: number;
+                    bestDart: {
+                        number: number;
+                        /** @enum {string} */
+                        ring: "single" | "double" | "treble" | "bull" | "bullseye" | "miss";
+                        damage: number;
+                    } | null;
+                    damageByFloor: number[];
+                }[];
+                best: {
+                    seat: number;
+                    darts: {
+                        number: number;
+                        /** @enum {string} */
+                        ring: "single" | "double" | "treble" | "bull" | "bullseye" | "miss";
+                    }[];
+                    damage: number;
+                    enemy: string | null;
+                } | null;
+            };
         };
         CricketDetail: {
             /**
