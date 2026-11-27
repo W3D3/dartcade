@@ -140,5 +140,5 @@ export type Mission = z.infer<typeof MissionSchema>
 export const VISIBILITIES = ['private', 'friends', 'public'] as const
 export type MissionVisibility = (typeof VISIBILITIES)[number]
 
-/** A dart as a step reads it: number 25 is the outer bull, 50 the inner (multiplier 1), 0 a miss. */
+/** A dart as a step reads it: number 25 is the outer bull, 50 the inner (multiplier 1, whatever the board sent: `toMissionDart`), 0 a miss. */
 export type MissionDart = { number: number; multiplier: number; score: number }

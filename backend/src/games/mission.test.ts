@@ -352,3 +352,97 @@ describe('mission game, corrections', () => {
     expect(view(s).runs[0].status).toBe('completed')
   })
 })
+
+describe('mission game, the inner bull', () => {
+  // The board may send the inner bull as 25 × 2 (issue #45); manual entry sends 50 × 1
+  const BOARD_INNER = { name: 'Bull', number: 25, bed: 'Double', multiplier: 2 } as const
+  const KEYPAD_INNER = { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 } as const
+  const OUTER = { name: '25', number: 25, bed: 'Single', multiplier: 1 } as const
+  type Seg = typeof BOARD_INNER | typeof KEYPAD_INNER | typeof OUTER
+
+  function throwAll(s: Session, seg: Seg, n: number, board: boolean) {
+    for (let index = 0; index < n; index++) {
+      const at = new Date((index + 1) * 1000)
+      if (board) {
+        const dart = { segment: seg, score: seg.number * seg.multiplier }
+        applyInput(s, { source: 'board', event: { kind: 'dart.detected', data: { visit_id: 'v1', index, dart, source_seq: index } } }, at)
+      } else applyInput(s, { source: 'user', action: { type: 'add_dart', segment: seg } }, at)
+    }
+    applyInput(s, { source: 'user', action: { type: 'takeout' } }, new Date(10_000))
+  }
+
+  const CASES: { name: string; step: Mission['steps'][number]; darts: number; inner: boolean; outer: boolean }[] = [
+    {
+      name: 'hit DB (inner only)',
+      step: { type: 'hit', targets: ['DB'], hits: 1, inARow: false, order: 'any' },
+      darts: 1,
+      inner: true,
+      outer: false,
+    },
+    {
+      name: 'hit B (either bull)',
+      step: { type: 'hit', targets: ['B'], hits: 1, inARow: false, order: 'any' },
+      darts: 1,
+      inner: true,
+      outer: true,
+    },
+    { name: 'marks on 25 (inner 2)', step: { type: 'marks', targets: [25], marks: 2, per: 'total' }, darts: 1, inner: true, outer: false },
+    {
+      name: 'checkout 50 double out',
+      step: { type: 'checkout', start: 50, maxDarts: 3, finish: 'double' },
+      darts: 1,
+      inner: true,
+      outer: false,
+    },
+    { name: 'score 50 in one dart', step: { type: 'score', points: 50, within: 1 }, darts: 1, inner: true, outer: false },
+    {
+      name: 'a visit of 150',
+      step: { type: 'visits', visits: 1, points: 150, compare: 'at_least', inARow: false },
+      darts: 3,
+      inner: true,
+      outer: false,
+    },
+    { name: 'average 150 over a visit', step: { type: 'average', visits: 1, average: 150 }, darts: 3, inner: true, outer: false },
+  ]
+
+  for (const c of CASES)
+    for (const [label, seg, board, done] of [
+      ['board inner', BOARD_INNER, true, c.inner],
+      ['keypad inner', KEYPAD_INNER, false, c.inner],
+      ['board outer', OUTER, true, c.outer],
+      ['keypad outer', OUTER, false, c.outer],
+    ] as const)
+      it(`${c.name}: ${label} ${done ? 'counts' : 'does not'}`, () => {
+        const s = start(mission({ steps: [c.step] }))
+        throwAll(s, seg, c.darts, board)
+        expect(view(s).runs[0].status).toBe(done ? 'completed' : 'playing')
+      })
+
+  it('a fast leg takes 50 off for either inner bull, 25 for the outer', () => {
+    const step = { type: 'leg', start: 301, within: 30, finish: 'double' } as const
+    for (const [seg, board, left] of [
+      [BOARD_INNER, true, 251],
+      [KEYPAD_INNER, false, 251],
+      [OUTER, true, 276],
+    ] as const) {
+      const s = start(mission({ steps: [step] }))
+      throwAll(s, seg, 1, board)
+      expect(view(s).runs[0].steps[0].progress.left).toBe(left)
+    }
+  })
+
+  it('Bull Rush: the inner bull from the board counts for its inner bull and bull checkout steps', () => {
+    const s = start(
+      mission({
+        steps: [
+          { type: 'hit', targets: ['DB'], hits: 2, inARow: false, order: 'any' },
+          { type: 'checkout', start: 50, maxDarts: 3, finish: 'double' },
+        ],
+      }),
+    )
+    throwAll(s, BOARD_INNER, 2, true)
+    // The checkout counts whole visits: the next visit's first dart
+    throwAll(s, BOARD_INNER, 1, true)
+    expect(view(s).runs[0].status).toBe('completed')
+  })
+})
