@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import type { Hit } from './hit.js'
 import type { RoomType } from './content/rooms.js'
-import { beginRun, endVisit, pickClass, pickTreasure, startRun, throwDart, voteEvent, type Battle, type RunState } from './run.js'
+import {
+  beginRun,
+  devResolveRoom,
+  endVisit,
+  pickClass,
+  pickTreasure,
+  startRun,
+  throwDart,
+  voteEvent,
+  type Battle,
+  type RunState,
+} from './run.js'
 import { runSummary } from './summary.js'
 import { DEFAULT_CONFIG, type DungeonConfig } from './rules.js'
 
@@ -221,6 +232,17 @@ describe('rooms', () => {
     s = voteEvent(s, 2, 0)
     expect(s.lastEvent).toMatchObject({ id, decision: 1 })
     expect(s.cleared).toBe(2)
+  })
+})
+
+describe('DEV: resolve this room', () => {
+  it('wins a fight with its gold, skips treasure, rest and event, and wins the run at the boss', () => {
+    let s = devResolveRoom(ready({ floors: 5, difficulty: 'easy' }))
+    expect(s).toMatchObject({ scene: { phase: 'map' }, cleared: 1, gold: 12 })
+    for (let i = 0; i < 20 && s.scene.phase !== 'ended'; i++) s = s.scene.phase === 'map' ? visit(s, [LEFT]) : devResolveRoom(s)
+    expect(s.scene).toEqual({ phase: 'ended', outcome: 'victory' })
+    expect(s.cleared).toBe(5)
+    expect(devResolveRoom(s)).toBe(s)
   })
 })
 

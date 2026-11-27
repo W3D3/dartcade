@@ -15,6 +15,7 @@ import {
 } from '../shared/dungeon/rules.js'
 import {
   beginRun,
+  devResolveRoom,
   endVisit,
   openVisit,
   pickClass,
@@ -115,6 +116,8 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
         return { state: voteEvent(s, a.seat, a.decision) }
       case 'dungeon_start':
         return { state: beginRun(s) }
+      case 'dungeon_dev_resolve':
+        return { state: devResolveRoom(s) }
       default:
         return { state: s }
     }

@@ -360,6 +360,25 @@ export function pickTreasure(s: RunState, seat: number, index: number): RunState
   return waiting < 0 ? finishRoom({ ...s, heroes }) : { ...s, heroes, turn: waiting, scene: { phase: 'treasure', offers } }
 }
 
+/**
+ * DEV, until every room has its screen: the room is over as if the party got through it. A fight is
+ * won (gold paid, the boss ends the run in victory); treasure, rest and event are skipped.
+ */
+export function devResolveRoom(s: RunState): RunState {
+  switch (s.scene.phase) {
+    case 'battle': {
+      const battle: Battle = { ...s.scene.battle, enemies: s.scene.battle.enemies.map(e => ({ ...e, hp: 0 })) }
+      return winFight({ ...s, visit: [], scene: { phase: 'battle', battle } }, battle.room)
+    }
+    case 'treasure':
+    case 'rest':
+    case 'event':
+      return finishRoom({ ...s, visit: [] })
+    default:
+      return s
+  }
+}
+
 /** A hero votes for one of the event's decisions; once every living hero voted, the winner applies. */
 export function voteEvent(s: RunState, seat: number, decision: number): RunState {
   const scene = s.scene

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SPRITES, type Sprite } from './sprites'
-import { mapLayout, spriteRects, voteOf } from './view'
+import { mapLayout, sceneOf, spriteRects, voteOf } from './view'
 import type { DungeonGame } from '$lib/api/game-ws'
 
 const map: DungeonGame['map'] = {
@@ -52,6 +52,18 @@ describe('mapLayout', () => {
   it('marks the path taken and the rooms passed by', () => {
     const { nodes } = mapLayout({ map, path: [2, 3, 2], floor: 3, room: 2 })
     expect(nodes.map(n => n.state)).toEqual(['taken', 'missed', 'taken', 'here'])
+  })
+})
+
+describe('sceneOf', () => {
+  it('names the screen: party in setup, boss for the boss fight, victory or defeat at the end', () => {
+    expect(sceneOf({ phase: 'setup', battle: null, outcome: null })).toBe('party')
+    expect(sceneOf({ phase: 'map', battle: null, outcome: null })).toBe('map')
+    const battle = (room: 'fight' | 'boss') => ({ room, round: 1, target: null, enemies: [], lastEnemyTurn: null })
+    expect(sceneOf({ phase: 'battle', battle: battle('fight'), outcome: null })).toBe('battle')
+    expect(sceneOf({ phase: 'battle', battle: battle('boss'), outcome: null })).toBe('boss')
+    expect(sceneOf({ phase: 'ended', battle: null, outcome: 'defeat' })).toBe('defeat')
+    expect(sceneOf({ phase: 'ended', battle: null, outcome: null })).toBe('summary')
   })
 })
 

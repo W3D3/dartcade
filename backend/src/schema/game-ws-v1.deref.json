@@ -28905,6 +28905,20 @@
             }
           },
           "description": "Dungeon, setup: the host starts the run once every hero has a class."
+        },
+        {
+          "title": "DungeonDevResolveAction",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "dungeon_dev_resolve"
+            }
+          },
+          "description": "Dungeon, DEV until every room has its screen: the host ends the current room as if the party got through it."
         }
       ]
     },
@@ -29354,6 +29368,20 @@
                 }
               },
               "description": "Dungeon, setup: the host starts the run once every hero has a class."
+            },
+            {
+              "title": "DungeonDevResolveAction",
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "dungeon_dev_resolve"
+                }
+              },
+              "description": "Dungeon, DEV until every room has its screen: the host ends the current room as if the party got through it."
             }
           ]
         }
