@@ -6,6 +6,8 @@ import type { RoomType } from './content/rooms.js'
 export const DIFFICULTIES = ['easy', 'medium', 'hard', 'expert'] as const
 export type Difficulty = (typeof DIFFICULTIES)[number]
 
+export const DIFFICULTY_LABEL: Record<Difficulty, string> = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' }
+
 /** Floors in the act; the last one is the boss. */
 export const FLOOR_COUNTS = [5, 7, 9] as const
 

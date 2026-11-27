@@ -29,7 +29,7 @@ export function runSummary(s: RunState): RunSummary {
 }
 
 /** The hero who dealt the most damage; null when nobody dealt any. */
-export const mvpOf = (summary: RunSummary): number | null => {
+export const mvpOf = (summary: { heroes: readonly { seat: number; damage: number }[] }): number | null => {
   const top = Math.max(0, ...summary.heroes.map(h => h.damage))
   return top > 0 ? (summary.heroes.find(h => h.damage === top)?.seat ?? null) : null
 }

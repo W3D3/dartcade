@@ -32,6 +32,7 @@
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import CricketSection from '$lib/components/details/CricketSection.svelte'
   import ShanghaiSection from '$lib/components/details/ShanghaiSection.svelte'
+  import RunSummary from '$lib/components/dungeon/RunSummary.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
   import Catch40Summary from '$lib/components/catch40/Catch40Summary.svelte'
@@ -217,6 +218,15 @@
             {#if x01}
               <!-- The statistics are X01's first tab: the section takes the whole width -->
               <X01Section detail={d} party={layout === 'party'} />
+            {:else if d.detail.mode === 'dungeon'}
+              <div class="rounded-panel bg-dg-bg p-4 md:p-5">
+                <RunSummary
+                  summary={d.detail.summary}
+                  darts={d.detail.darts}
+                  names={d.game.players.toSorted((a, b) => a.seat - b.seat).map(p => p.name)}
+                  timeMs={d.game.finishedAt ? Date.parse(d.game.finishedAt) - Date.parse(d.game.createdAt) : null}
+                />
+              </div>
             {:else}
               <div class="flex flex-col gap-4 md:gap-6 {cricketParty ? 'xl:flex-row' : 'lg:flex-row'}">
                 <div

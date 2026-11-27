@@ -13,6 +13,7 @@
   import PracticeSummaryScreen from '$lib/components/practice/PracticeSummaryScreen.svelte'
   import { hasPracticeSummary } from '$lib/practice'
   import MissionResult from '$lib/components/missions/MissionResult.svelte'
+  import RunSummary from '$lib/components/dungeon/RunSummary.svelte'
   import { pendingRoll } from '$lib/minigolf/match'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { derived, get, readable } from 'svelte/store'
@@ -393,7 +394,7 @@
   // The fetch failed: 121's summary falls back to the standings alone
   let savedFailed = $state(false)
   $effect(() => {
-    if (snapshot?.status !== 'finished' || !(isX01 || hasPracticeSummary(snapshot)) || snapshot.mySeats.length === 0) return
+    if (snapshot?.status !== 'finished' || !(isX01 || dungeon || hasPracticeSummary(snapshot)) || snapshot.mySeats.length === 0) return
     const id = snapshot.sessionId
     if (savedFor === id) return
     savedFor = id
@@ -415,6 +416,17 @@
   function minigolfRolledKey(key: string): void {
     minigolfRolled = key
   }
+  // A Dungeon run ends on its run summary: the view's, or the saved one for a run given up
+  const dungeon = $derived(current.dungeon)
+  const dungeonSaved = $derived(savedGame?.game.id === snapshot?.sessionId && savedGame?.detail.mode === 'dungeon' ? savedGame : null)
+  const dungeonSummary = $derived(
+    dungeon && snapshot?.status === 'finished'
+      ? (dungeon.summary ?? (dungeonSaved?.detail.mode === 'dungeon' ? dungeonSaved.detail.summary : null))
+      : null,
+  )
+  const dungeonTime = $derived(
+    dungeonSaved?.game.finishedAt ? Date.parse(dungeonSaved.game.finishedAt) - Date.parse(dungeonSaved.game.createdAt) : null,
+  )
   const win = $derived(minigolfHold ? null : winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
 
   /** The win screen's button: the session is already finished and released, so a refused
@@ -537,7 +549,13 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && !practiceFinished && !missionFinished && picksView(remote) && manualEntry}
+        showViewToggle={!bullOff &&
+          !minigolf &&
+          !practiceFinished &&
+          !missionFinished &&
+          !dungeonSummary &&
+          picksView(remote) &&
+          manualEntry}
         boards={myBoards}
         {gameId}
         scoreBased={snapshot.scoreBased}
@@ -579,6 +597,23 @@
           }}
           secondary={unlocksButton ? null : winSecondaryButton}
         />
+      {:else if dungeon && dungeonSummary}
+        <main class="h-full overflow-y-auto bg-dg-bg p-4 md:p-5">
+          <RunSummary summary={dungeonSummary} names={snapshot.players.map(p => p.name)} darts={dungeon.totalDarts} timeMs={dungeonTime}>
+            {#snippet actions()}
+              {#if winSecondaryButton}
+                <button type="button" class="rounded-xl border border-dg-line px-4 py-2 text-dg-text" onclick={winSecondaryButton.onclick}
+                  >{winSecondaryButton.label}</button
+                >
+              {/if}
+              <button
+                type="button"
+                class="rounded-xl bg-dg-gold px-5 py-2 font-display text-lg font-bold uppercase text-dg-bg"
+                onclick={(unlocksButton ?? winPrimaryButton).onclick}>{(unlocksButton ?? winPrimaryButton).label}</button
+              >
+            {/snippet}
+          </RunSummary>
+        </main>
       {:else if mission && missionFinished}
         {@const seat = snapshot.mySeats[0] ?? Math.max(0, mission.winner ?? 0)}
         <MissionResult
