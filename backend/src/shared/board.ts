@@ -5,6 +5,13 @@
 export type Bed = 'Outside' | 'Single' | 'SingleInner' | 'SingleOuter' | 'Triple' | 'Double'
 export type Segment = { name: string; number: number; bed: Bed; multiplier: 0 | 1 | 2 | 3 }
 
+/**
+ * The inner bull (50). Manual entry and the drawn board send it as number 50 (multiplier 1); Board
+ * Manager may send number 25 with multiplier 2 (issue #45), so every check reads both.
+ */
+export const isInnerBull = (s: { number: number; multiplier: number }): boolean =>
+  s.number === 50 || (s.number === 25 && s.multiplier === 2)
+
 export const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.0 } as const
 export const SEGS: readonly number[] = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
 export const HALF = Math.PI / 20

@@ -6,6 +6,7 @@
 // Design: docs/superpowers/specs/2026-11-24-missions-design.md.
 import type { BoardEvent, CommittedVisit, Dart, GameModule, MissionDetail, Player, SeatResult, UserAction } from '../session/types.js'
 import type { MissionView } from '../session/views.js'
+import { isInnerBull } from '../shared/board.js'
 import { progressOf } from '../shared/missions/steps.js'
 import {
   deadline,
@@ -55,7 +56,11 @@ export type MissionState = {
   now: number | null
 }
 
-const toMissionDart = (d: Dart): MissionDart => ({ number: d.segment.number, multiplier: d.segment.multiplier, score: d.score })
+// Either inner bull encoding becomes number 50, the one the step rules read
+const toMissionDart = (d: Dart): MissionDart =>
+  isInnerBull(d.segment)
+    ? { number: 50, multiplier: 1, score: 50 }
+    : { number: d.segment.number, multiplier: d.segment.multiplier, score: d.score }
 
 const playing = (run: MissionRun) => run.status === 'playing'
 const finished = (s: MissionState) => !s.runs.some(playing)

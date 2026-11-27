@@ -18,6 +18,7 @@ import { withBullOff } from '../session/withBullOff.js'
 import { scoreDart } from './outRules.js'
 import type { OutMode } from './outRules.js'
 import { checkoutHint } from '../shared/checkout.js'
+import { isInnerBull } from '../shared/board.js'
 import { rankSeats } from './ranking.js'
 import { row, values } from './matchStats.js'
 import { validateOptions } from './configMeta.js'
@@ -84,7 +85,7 @@ export function nextTarget(t: { target: number; made: boolean; darts: number }, 
 
 export function dartLabel(seg: { number: number; multiplier: number }): string {
   if (seg.number === 0 || seg.multiplier === 0) return 'Miss'
-  if (seg.number === 50 || (seg.number === 25 && seg.multiplier === 2)) return 'Bull'
+  if (isInnerBull(seg)) return 'Bull'
   if (seg.number === 25) return '25'
   if (seg.multiplier === 3) return `T${seg.number}`
   if (seg.multiplier === 2) return `D${seg.number}`
