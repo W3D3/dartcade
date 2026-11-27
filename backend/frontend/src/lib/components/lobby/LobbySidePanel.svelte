@@ -7,6 +7,7 @@
   import { Check } from '@lucide/svelte'
   import type { Lobby, LobbyAccess } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
+  import PersonBadges from '$lib/components/PersonBadges.svelte'
   import * as Tabs from '$lib/components/ui/tabs/index.js'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import ActivityList from './ActivityList.svelte'
@@ -80,7 +81,10 @@
                     <StatusRing kind={r.friend.status.kind} />
                   </span>
                   <span class="flex flex-col gap-px min-w-0 grow">
-                    <span class="text-[15px] font-semibold truncate">{r.friend.name}</span>
+                    <span class="flex items-center gap-2 min-w-0">
+                      <span class="text-[15px] font-semibold truncate">{r.friend.name}</span>
+                      <PersonBadges country={r.friend.country} average={r.friend.average} />
+                    </span>
                     <span class="text-[12px] truncate {TONE[r.tone]}">{r.line}</span>
                   </span>
                   {#if r.state === 'in-lobby'}
