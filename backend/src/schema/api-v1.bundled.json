@@ -11683,6 +11683,14 @@
           },
           "avatar": {
             "$ref": "#/components/schemas/Avatar"
+          },
+          "country": {
+            "type": "string",
+            "description": "Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none."
+          },
+          "average": {
+            "type": "number",
+            "description": "Their X01 3-dart average over the last 30 days, as on their profile; left out without a game."
           }
         }
       },
@@ -11997,6 +12005,14 @@
           },
           "avatar": {
             "$ref": "#/components/schemas/Avatar"
+          },
+          "country": {
+            "type": "string",
+            "description": "Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none."
+          },
+          "average": {
+            "type": "number",
+            "description": "Their X01 3-dart average over the last 30 days, as on their profile; left out without a game."
           },
           "mutualFriends": {
             "type": "integer",
@@ -24882,6 +24898,14 @@
           },
           "lastSeen": {
             "$ref": "#/components/schemas/LastSeen"
+          },
+          "country": {
+            "type": "string",
+            "description": "Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none."
+          },
+          "average": {
+            "type": "number",
+            "description": "Their X01 3-dart average over the last 30 days, as on their profile; left out without a game."
           }
         }
       },

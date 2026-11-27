@@ -475,6 +475,14 @@ export interface UserRef {
    */
   name: string
   avatar: Avatar1
+  /**
+   * Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none.
+   */
+  country?: string
+  /**
+   * Their X01 3-dart average over the last 30 days, as on their profile; left out without a game.
+   */
+  average?: number
 }
 export interface UserRef1 {
   id: string
@@ -483,6 +491,14 @@ export interface UserRef1 {
    */
   name: string
   avatar: Avatar1
+  /**
+   * Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none.
+   */
+  country?: string
+  /**
+   * Their X01 3-dart average over the last 30 days, as on their profile; left out without a game.
+   */
+  average?: number
 }
 /**
  * A host asks you to take over a guest seat of a finished game, waiting for your answer (Invites page; pushed on /ws/me). Until you accept, nothing about the game changes.
@@ -554,6 +570,14 @@ export interface Friend {
   invited: boolean
   avatar: Avatar1
   lastSeen?: LastSeen
+  /**
+   * Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none.
+   */
+  country?: string
+  /**
+   * Their X01 3-dart average over the last 30 days, as on their profile; left out without a game.
+   */
+  average?: number
 }
 export interface FriendPlaying {
   kind: 'playing'

@@ -6,6 +6,7 @@ import { FriendsService } from './service.js'
 import { LobbyHub } from '../lobby/hub.js'
 import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 import { insertLobby, insertUsers } from '../test/fixtures.js'
+import { insertGameSession, finishGameSession } from '../db/queries.js'
 
 const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
@@ -154,6 +155,124 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       body: { code: 'already_friends', error: "You're already friends" },
     })
     await expect(friends.request('lena', 'Christoph')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_friends' } })
+  })
+
+  it("lists each friend's country and unrounded 30-day X01 average (69.96 stays under the 70 class, as on the profile), left out without one", async () => {
+    await db.updateTable('user').set({ country: 'AT' }).where('id', '=', 'lena').execute()
+    const played = async (id: string, userId: string, average: number) => {
+      await insertGameSession(db, {
+        id,
+        owner_user_id: userId,
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 0,
+        config: {},
+        players: [{ name: userId, user_id: userId, controller_user_id: userId, board_db_id: null, bot_level: null }],
+      })
+      await finishGameSession(db, id, new Date(), [
+        { placement: 1, stats: { dartsThrown: 30, average }, throwPosition: 0, forfeited: false },
+      ])
+    }
+    await played('g-lena', 'lena', 69.96)
+    for (const name of ['Lena', 'Max']) {
+      const r = await friends.request('chris', name)
+      await friends.accept(name === 'Lena' ? 'lena' : 'max', r.id)
+    }
+    const list = (await friends.list('chris')).friends
+    expect(list.find(f => f.id === 'lena')).toMatchObject({ country: 'AT', average: 69.96 })
+    const max = list.find(f => f.id === 'max')!
+    expect(max).not.toHaveProperty('country')
+    expect(max).not.toHaveProperty('average')
+    await db.deleteFrom('game_sessions').where('id', '=', 'g-lena').execute()
+  })
+
+  it("keeps a friend's average until a game of theirs ends", async () => {
+    const r = await friends.request('chris', 'Lena')
+    await friends.accept('lena', r.id)
+    const averageOf = async () => (await friends.list('chris')).friends[0]?.average
+    const play = async (id: string, average: number) => {
+      await db
+        .insertInto('game_sessions')
+        .values({
+          id,
+          owner_user_id: 'lena',
+          game_id: 'x01',
+          game_version: 1,
+          rng_seed: 0,
+          config: JSON.stringify({}),
+          status: 'finished',
+          finished_at: new Date(),
+        })
+        .execute()
+      await db
+        .insertInto('game_players')
+        .values({
+          session_id: id,
+          seat: 0,
+          name: 'Lena',
+          user_id: 'lena',
+          controller_user_id: 'lena',
+          placement: 1,
+          stats: JSON.stringify({ dartsThrown: 30, average }),
+          throw_position: 0,
+        })
+        .execute()
+    }
+    const ended = (gameId: string) =>
+      ({ gameId, status: 'finished' as const, userIds: ['lena'] }) as Parameters<typeof friends.onGameEnded>[0]
+    expect(await averageOf()).toBeUndefined()
+    await play('g-c1', 60)
+    expect(await averageOf()).toBeUndefined() // cached: no games yet
+    await friends.onGameEnded(ended('cricket'))
+    expect(await averageOf()).toBeUndefined() // not an X01 game
+    await friends.onGameEnded(ended('x01'))
+    expect(await averageOf()).toBe(60)
+    await play('g-c2', 80)
+    expect(await averageOf()).toBe(60)
+    friends.averagesChanged(['lena']) // an admin invalidated or deleted a game
+    expect(await averageOf()).toBe(70)
+    await db.deleteFrom('game_sessions').where('id', 'in', ['g-c1', 'g-c2']).execute()
+  })
+
+  it('gives requests and search hits the same country and average, left out without one', async () => {
+    await db.updateTable('user').set({ country: 'AT' }).where('id', '=', 'lena').execute()
+    await db.updateTable('user').set({ country: null }).where('id', '=', 'max').execute()
+    await db
+      .insertInto('game_sessions')
+      .values({
+        id: 'g-req',
+        owner_user_id: 'lena',
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 0,
+        config: JSON.stringify({}),
+        status: 'finished',
+        finished_at: new Date(),
+      })
+      .execute()
+    await db
+      .insertInto('game_players')
+      .values({
+        session_id: 'g-req',
+        seat: 0,
+        name: 'Lena',
+        user_id: 'lena',
+        controller_user_id: 'lena',
+        placement: 1,
+        stats: JSON.stringify({ dartsThrown: 30, average: 61.2 }),
+        throw_position: 0,
+      })
+      .execute()
+    await friends.request('lena', 'Christoph')
+    await friends.request('chris', 'Max')
+    const list = await friends.list('chris')
+    expect(list.incoming[0]?.from).toMatchObject({ id: 'lena', country: 'AT', average: 61.2 })
+    expect(list.outgoing[0]?.to).not.toHaveProperty('country')
+    expect(list.outgoing[0]?.to).not.toHaveProperty('average')
+    const hit = (await friends.search('sam', 'lena'))[0]
+    expect(hit).toMatchObject({ name: 'Lena', country: 'AT', average: 61.2 })
+    await db.deleteFrom('game_sessions').where('id', '=', 'g-req').execute()
   })
 
   it('a request to someone who already asked you accepts theirs', async () => {

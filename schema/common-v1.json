@@ -247,7 +247,15 @@
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string", "description": "Their handle, shown as @name" },
-        "avatar": { "$ref": "#/$defs/Avatar" }
+        "avatar": { "$ref": "#/$defs/Avatar" },
+        "country": {
+          "type": "string",
+          "description": "Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none."
+        },
+        "average": {
+          "type": "number",
+          "description": "Their X01 3-dart average over the last 30 days, as on their profile; left out without a game."
+        }
       }
     },
     "FriendPlaying": {
@@ -314,7 +322,15 @@
         },
         "invited": { "type": "boolean", "description": "They have a pending invite to your lobby" },
         "avatar": { "$ref": "#/$defs/Avatar" },
-        "lastSeen": { "$ref": "#/$defs/LastSeen" }
+        "lastSeen": { "$ref": "#/$defs/LastSeen" },
+        "country": {
+          "type": "string",
+          "description": "Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none."
+        },
+        "average": {
+          "type": "number",
+          "description": "Their X01 3-dart average over the last 30 days, as on their profile; left out without a game."
+        }
       }
     },
     "LastSeen": {
