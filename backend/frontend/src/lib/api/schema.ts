@@ -14193,6 +14193,15 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /** @description 'hidden': a hidden mission can't be made official until a moderator restores it; 'limit reached': making an official mission the admin's own again, at the cap */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     deleteMission: {

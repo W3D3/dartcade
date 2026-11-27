@@ -1,11 +1,11 @@
 // Missions (schema/api-v1.yaml, tag missions): list, read, write, report, highscores and start, plus
-// the moderators' hide/restore and the admins' official missions. Every route is behind
+// the moderators' hide/restore; admins make a mission official with `official` on the create and update. Every route is behind
 // missions.enabled (404 while it is off). Who sees what is canSee/visibleTo in db/missions.ts.
 // Design: docs/superpowers/specs/2026-11-24-missions-design.md.
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { isAdmin, isModerator, requireAdmin, requireModerator } from '../auth/admin.js'
+import { isAdmin, isModerator, requireModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import { loadFlagUser } from '../flags/index.js'
 import { friendIdsOf } from '../db/friends.js'
@@ -129,8 +129,10 @@ export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     async (req, reply) => {
       const v = await viewerOf(db, req.userId)
       const mission = bodyMission(req.body.mission)
-      if ((await ownedCount(db, v.id)) >= MISSION_LIMITS.perPlayer) throw new ApiError(409, { error: 'limit reached' })
-      const id = await createMission(db, v.id, mission, req.body.visibility)
+      const { official } = req.body
+      if (official !== undefined && !v.admin) throw new ApiError(403, { error: 'forbidden' })
+      if (!official && (await ownedCount(db, v.id)) >= MISSION_LIMITS.perPlayer) throw new ApiError(409, { error: 'limit reached' })
+      const id = await createMission(db, official ? null : v.id, mission, official ? 'public' : req.body.visibility)
       return reply.code(201).send(await card(v, id))
     },
   )
@@ -142,8 +144,17 @@ export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   app.put<Route<'updateMission'>>('/api/missions/:id', { preValidation: requireAuth, schema: fromSpec('updateMission') }, async req => {
     const v = await viewerOf(db, req.userId)
     const m = await writable(db, req.params.id, v)
-    // An official mission stays everyone's
-    await updateMission(db, m.id, bodyMission(req.body.mission), m.ownerUserId === null ? 'public' : req.body.visibility)
+    const { official } = req.body
+    // Only admins make a mission official or take it back (the client's flag is never trusted)
+    if (official !== undefined && !v.admin) throw new ApiError(403, { error: 'forbidden' })
+    const wasOfficial = m.ownerUserId === null
+    const toOfficial = official ?? wasOfficial
+    const change = toOfficial === wasOfficial ? undefined : { ownerUserId: toOfficial ? null : v.id, adminId: v.id }
+    // A hidden mission can't be restored once official (moderators don't act on those): restore it first
+    if (change?.ownerUserId === null && m.hiddenAt !== null) throw new ApiError(409, { error: 'hidden' })
+    if (change?.ownerUserId && (await ownedCount(db, v.id)) >= MISSION_LIMITS.perPlayer) throw new ApiError(409, { error: 'limit reached' })
+    // An official mission is everyone's
+    await updateMission(db, m.id, bodyMission(req.body.mission), toOfficial ? 'public' : req.body.visibility, change)
     return card(v, m.id)
   })
 
@@ -211,16 +222,6 @@ export function missionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         throw engineApiError(err)
       }
       return reply.code(201).send({ sessionId })
-    },
-  )
-
-  app.post<Route<'createOfficialMission'>>(
-    '/api/admin/missions',
-    { preValidation: [requireAuth, requireAdmin], schema: fromSpec('createOfficialMission') },
-    async (req, reply) => {
-      const v = await viewerOf(db, req.userId)
-      const id = await createMission(db, null, bodyMission(req.body.mission), 'public')
-      return reply.code(201).send(await card(v, id))
     },
   )
 

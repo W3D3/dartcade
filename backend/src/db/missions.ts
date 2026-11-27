@@ -5,7 +5,6 @@ import { ulid } from 'ulid'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import { compareRuns, sameRules, type RunResult } from '../shared/missions/highscores.js'
-import { OFFICIAL_MISSIONS } from '../shared/missions/official.js'
 import { MissionSchema, type Difficulty, type Mission, type MissionVisibility } from '../shared/missions/types.js'
 
 export type MissionRow = {
@@ -226,17 +225,46 @@ export async function createMission(
   return id
 }
 
-/** Saves the mission; a change to its rules (more than its name and description) clears its highscores. */
-export async function updateMission(db: Kysely<Database>, id: string, mission: Mission, visibility: MissionVisibility): Promise<void> {
+/** Who owns a mission afterwards, when a save changes it: an admin's promotion to or demotion from official. */
+export type OwnerChange = { ownerUserId: string | null; adminId: string }
+
+/**
+ * Saves the mission; a change to its rules (more than its name and description) clears its highscores.
+ * With an owner change (null: official) the mission moves too, closes its reports and writes an admin_audit row.
+ */
+export async function updateMission(
+  db: Kysely<Database>,
+  id: string,
+  mission: Mission,
+  visibility: MissionVisibility,
+  change?: OwnerChange,
+): Promise<void> {
   await db.transaction().execute(async trx => {
     const before = await trx.selectFrom('missions').select('definition').where('id', '=', id).forUpdate().executeTakeFirst()
     const old = MissionSchema.safeParse(before?.definition)
     await trx
       .updateTable('missions')
-      .set({ definition: JSON.stringify(mission), visibility, updated_at: new Date() })
+      .set({
+        definition: JSON.stringify(mission),
+        visibility,
+        updated_at: new Date(),
+        ...(change && { owner_user_id: change.ownerUserId }),
+      })
       .where('id', '=', id)
       .execute()
     if (!old.success || !sameRules(old.data, mission)) await trx.deleteFrom('mission_bests').where('mission_id', '=', id).execute()
+    if (!change) return
+    // An official mission is not reportable, so reports on a mission that becomes one are moot
+    if (change.ownerUserId === null) await closeReports(trx, id)
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: change.adminId,
+        action: change.ownerUserId === null ? 'mission.official' : 'mission.unofficial',
+        target: id,
+        detail: JSON.stringify({ ownerId: change.ownerUserId }),
+      })
+      .execute()
   })
 }
 
@@ -275,17 +303,6 @@ export async function recordBest(
     .returning('user_id')
     .executeTakeFirst()
   return row !== undefined
-}
-
-/** Adds the official missions not in the table yet; an admin's edits to one already there stay. */
-export async function seedOfficialMissions(db: Kysely<Database>): Promise<void> {
-  await db
-    .insertInto('missions')
-    .values(
-      OFFICIAL_MISSIONS.map(o => ({ id: o.id, owner_user_id: null, visibility: 'public' as const, definition: JSON.stringify(o.mission) })),
-    )
-    .onConflict(oc => oc.column('id').doNothing())
-    .execute()
 }
 
 /** Files the report; 'duplicate' if this person has an open report on the mission already. */

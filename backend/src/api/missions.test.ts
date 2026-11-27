@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertLobby, insertUsers } from '../test/fixtures.js'
-import { createMission, seedOfficialMissions } from '../db/missions.js'
+import { createMission } from '../db/missions.js'
 import { setupFlags } from '../flags/index.js'
 import { MissionSchema, type Mission, type MissionVisibility } from '../shared/missions/types.js'
 import { createFastify } from './fastify.js'
@@ -123,19 +123,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     }
   })
 
-  it('filters Mine, From friends and difficulty, and lists the official missions for everyone', async () => {
-    await seedOfficialMissions(db)
+  it('lists nothing on an empty database: no mission ships in code', async () => {
+    for (const who of WHO) expect((await call('GET', '/api/missions', who)).json()).toEqual({ missions: [] })
+  })
+
+  it('filters Mine, From friends and difficulty, and lists an official mission for everyone', async () => {
+    const official = await createMission(db, null, mission({ difficulty: 'hard' }), 'public')
     const hard = await own('friends', mission({ difficulty: 'hard' }))
     const mine = (await call('GET', '/api/missions?filter=mine', 'owner')).json().missions
     expect(mine.map((m: { id: string }) => m.id)).toEqual([hard])
     const fromFriends = (await call('GET', '/api/missions?filter=friends', 'friend')).json().missions
     expect(fromFriends.map((m: { id: string }) => m.id)).toEqual([hard])
     const all = (await call('GET', '/api/missions', 'stranger')).json().missions
-    expect(all.every((m: { official: boolean }) => m.official)).toBe(true)
-    expect(all.length).toBe(6)
+    expect(all.map((m: { id: string }) => m.id)).toEqual([official])
     const hards = (await call('GET', '/api/missions?difficulty=hard', 'friend')).json().missions.map((m: { id: string }) => m.id)
     expect(hards).toContain(hard)
-    expect(hards).toContain('official-tungsten-gauntlet')
+    expect(hards).toContain(official)
   })
 
   it('answers 404 everywhere while missions.enabled is off for the user', async () => {
@@ -169,8 +172,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     expect((await call('DELETE', `/api/missions/${id}`, 'owner')).statusCode).toBe(403)
     expect((await call('DELETE', `/api/missions/${id}`, 'stranger')).statusCode).toBe(204)
 
-    expect((await call('POST', '/api/admin/missions', 'mod', { mission: mission() })).statusCode).toBe(403)
-    const official = await call('POST', '/api/admin/missions', 'admin', { mission: mission() })
+    expect((await call('POST', '/api/missions', 'mod', { mission: mission(), visibility: 'public', official: true })).statusCode).toBe(403)
+    const official = await call('POST', '/api/missions', 'admin', { mission: mission(), visibility: 'public', official: true })
     expect(official.json()).toMatchObject({ official: true, author: null, visibility: 'public' })
     const oid = official.json().id
     expect((await call('PUT', `/api/missions/${oid}`, 'stranger', { mission: mission(), visibility: 'private' })).statusCode).toBe(403)
@@ -178,6 +181,75 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
     expect((await call('PUT', `/api/missions/${oid}`, 'admin', { mission: mission(), visibility: 'private' })).json().visibility).toBe(
       'public',
     )
+  })
+
+  describe('making a mission official', () => {
+    const put = (id: string, who: Who, body: object) =>
+      call('PUT', `/api/missions/${id}`, who, { mission: mission(), visibility: 'friends', ...body })
+    const ownerOf = async (id: string) =>
+      await db.selectFrom('missions').select(['owner_user_id', 'visibility']).where('id', '=', id).executeTakeFirstOrThrow()
+
+    it('creates one with official: true, for admins only', async () => {
+      for (const who of ['owner', 'mod'] as const)
+        expect((await call('POST', '/api/missions', who, { mission: mission(), visibility: 'public', official: true })).statusCode).toBe(
+          403,
+        )
+      const res = await call('POST', '/api/missions', 'admin', { mission: mission(), visibility: 'private', official: true })
+      expect(res.statusCode).toBe(201)
+      expect(res.json()).toMatchObject({ official: true, author: null, visibility: 'public' })
+    })
+
+    it('promotes and demotes: only an admin sends official, whoever the author is', async () => {
+      const mine = await createMission(db, 'admin', mission(), 'private')
+      for (const who of ['owner', 'mod', 'stranger'] as const) expect((await put(mine, who, { official: true })).statusCode).toBe(404)
+      const theirs = await own('public')
+      // Not an admin: official is refused whatever the value, even on one's own mission
+      expect((await put(theirs, 'owner', { official: true })).statusCode).toBe(403)
+      expect((await put(theirs, 'owner', { official: false })).statusCode).toBe(403)
+      expect(await ownerOf(theirs)).toMatchObject({ owner_user_id: 'owner' })
+
+      const up = await put(mine, 'admin', { official: true })
+      expect(up.json()).toMatchObject({ official: true, author: null, visibility: 'public' })
+      expect(await ownerOf(mine)).toEqual({ owner_user_id: null, visibility: 'public' })
+      // Everyone sees and may no longer report it; only admins edit it
+      expect((await call('GET', `/api/missions/${mine}`, 'stranger')).json()).toMatchObject({ official: true, canEdit: false })
+      expect((await put(mine, 'mod', { visibility: 'public' })).statusCode).toBe(403)
+
+      const down = await put(mine, 'admin', { official: false, visibility: 'friends' })
+      expect(down.json()).toMatchObject({ official: false, author: { id: 'admin' }, visibility: 'friends', canEdit: true })
+      expect(await ownerOf(mine)).toEqual({ owner_user_id: 'admin', visibility: 'friends' })
+      // Left out, it stays as it is
+      expect((await put(mine, 'admin', {})).json()).toMatchObject({ official: false })
+    })
+
+    it('refuses to make a hidden mission official until it is restored', async () => {
+      const id = await createMission(db, 'admin', mission(), 'public')
+      await db.updateTable('missions').set({ hidden_at: new Date(), hidden_reason: 'spam' }).where('id', '=', id).execute()
+      expect((await put(id, 'admin', { official: true })).statusCode).toBe(409)
+      expect(await ownerOf(id)).toMatchObject({ owner_user_id: 'admin' })
+      expect((await call('POST', `/api/admin/missions/${id}/restore`, 'mod')).statusCode).toBe(204)
+      expect((await put(id, 'admin', { official: true })).statusCode).toBe(200)
+    })
+
+    it('writes an audit row, and closes the reports of a promoted mission', async () => {
+      const id = await createMission(db, 'admin', mission(), 'public')
+      await db.insertInto('mission_reports').values({ id: 'r1', mission_id: id, reporter_user_id: 'stranger', reason: 'x' }).execute()
+      await put(id, 'admin', { official: true })
+      await put(id, 'admin', { official: false })
+      const audit = await db.selectFrom('admin_audit').select(['admin_user_id', 'action', 'target']).orderBy('id').execute()
+      expect(audit).toEqual([
+        { admin_user_id: 'admin', action: 'mission.official', target: id },
+        { admin_user_id: 'admin', action: 'mission.unofficial', target: id },
+      ])
+      expect((await db.selectFrom('mission_reports').select('dismissed_at').executeTakeFirstOrThrow()).dismissed_at).not.toBeNull()
+    })
+
+    it('an admin deletes an official mission, and it stays deleted', async () => {
+      const id = await createMission(db, null, mission(), 'public')
+      expect((await call('DELETE', `/api/missions/${id}`, 'mod')).statusCode).toBe(403)
+      expect((await call('DELETE', `/api/missions/${id}`, 'admin')).statusCode).toBe(204)
+      expect((await call('GET', '/api/missions', 'admin')).json()).toEqual({ missions: [] })
+    })
   })
 
   it('refuses a mission the shared rules refuse, with where', async () => {
@@ -231,8 +303,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('missions API', { timeout: 30_00
       { action: 'mission.restore', target: id },
     ])
     // An official mission is the admins' own, not a moderator's to hide
-    await seedOfficialMissions(db)
-    expect((await call('POST', '/api/admin/missions/official-bull-rush/hide', 'mod', { reason: 'x' })).statusCode).toBe(404)
+    const official = await createMission(db, null, mission(), 'public')
+    expect((await call('POST', `/api/admin/missions/${official}/hide`, 'mod', { reason: 'x' })).statusCode).toBe(404)
   })
 
   it('starts a game with a snapshot of the mission and its highscores; test runs only for the author', async () => {

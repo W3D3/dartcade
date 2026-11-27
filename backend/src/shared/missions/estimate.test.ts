@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { estimate } from './estimate.js'
-import { OFFICIAL_MISSIONS } from './official.js'
+import { GAUNTLET as gauntlet } from './fixtures.js'
 import type { Mission } from './types.js'
-
-const gauntlet = OFFICIAL_MISSIONS.find(m => m.id === 'official-tungsten-gauntlet')!.mission
 
 describe('estimate', () => {
   it('puts the Tungsten Gauntlet near the artboard (6–12 min, about 60 darts)', () => {
