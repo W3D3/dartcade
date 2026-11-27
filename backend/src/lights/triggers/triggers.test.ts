@@ -251,6 +251,35 @@ describe('other games', () => {
     const g = (lives: number) => snap('hilo', { phase: 'game', currentPlayer: 0, winner: null, seats: [{ lives }, { lives: 3 }] })
     expect(triggersFor(g(3), g(2))).toEqual([{ kind: 'hilo.lifeLost', seat: 0 }])
   })
+  describe('mission', () => {
+    type Run = { status: 'playing' | 'completed' | 'failed'; attempts?: number }
+    const g = (runs: Run[], winner: number | null = null) =>
+      snap('mission', {
+        currentPlayer: 0,
+        winner,
+        runs: runs.map(r => ({ status: r.status, steps: [{ attempts: r.attempts ?? 1 }] })),
+      })
+    it('a run out of time or given up blinks red and is no win, even as the only run', () => {
+      expect(triggersFor(g([{ status: 'playing' }]), g([{ status: 'failed' }], 0))).toEqual([{ kind: 'bust', seat: 0 }])
+    })
+    it('a failed attempt (the step starts again) blinks red', () => {
+      expect(triggersFor(g([{ status: 'playing' }]), g([{ status: 'playing', attempts: 2 }]))).toEqual([{ kind: 'bust', seat: 0 }])
+    })
+    it('a completed run wins', () => {
+      expect(triggersFor(g([{ status: 'playing' }]), g([{ status: 'completed' }], 0))).toEqual([{ kind: 'game.won', seat: 0 }])
+    })
+    it('with more players the game is won by the first-placed run only when it completed', () => {
+      const before = g([{ status: 'completed' }, { status: 'playing' }])
+      expect(triggersFor(before, g([{ status: 'completed' }, { status: 'failed' }], 0))).toEqual([
+        { kind: 'bust', seat: 1 },
+        { kind: 'game.won', seat: 0 },
+      ])
+      expect(triggersFor(g([{ status: 'failed' }, { status: 'playing' }]), g([{ status: 'failed' }, { status: 'failed' }], 0))).toEqual([
+        { kind: 'bust', seat: 1 },
+      ])
+    })
+  })
+
   it('minigolf: a ball sunk', () => {
     const g = (status: string, strokes: number) =>
       snap('minigolf', {

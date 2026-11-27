@@ -5,6 +5,7 @@ import { dungeonTriggers } from './dungeon.js'
 import { commonTriggers } from './common.js'
 import { hiloTriggers } from './hilo.js'
 import { minigolfTriggers } from './minigolf.js'
+import { missionTriggers, missionWon } from './mission.js'
 import { p121Triggers } from './p121.js'
 import { x01Triggers } from './x01.js'
 
@@ -18,7 +19,9 @@ export function triggersFor(before: Snapshot | null, after: Snapshot): Trigger[]
   // common one here is the only one and must stay.
   // Dungeon ends in Victory or Defeat of its own (dungeonTriggers): a lost run sets a winner too.
   const checkedOut = after.gameId === 'x01' && after.game.winner !== null && after.game.scores[after.game.winner] === 0
-  const filtered = checkedOut || after.gameId === 'dungeon' ? common.filter(t => t.kind !== 'game.won') : common
+  // A mission ends when every run is over, completed or not: only a completed one is a win
+  const lost = after.gameId === 'mission' && !missionWon(after.game)
+  const filtered = checkedOut || lost || after.gameId === 'dungeon' ? common.filter(t => t.kind !== 'game.won') : common
   return [...gameTriggers(prev, after), ...filtered]
 }
 
@@ -36,8 +39,9 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
       return p121Triggers(before?.gameId === 'p121' ? before.game : null, after.game)
     case 'dungeon':
       return dungeonTriggers(before?.gameId === 'dungeon' ? before.game : null, after.game)
-    case 'atc':
     case 'mission':
+      return missionTriggers(before?.gameId === 'mission' ? before.game : null, after.game)
+    case 'atc':
     case 'catch40':
     case 'shanghai':
       return []
