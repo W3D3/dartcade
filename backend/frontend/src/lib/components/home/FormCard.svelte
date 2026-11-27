@@ -1,7 +1,7 @@
 <script lang="ts">
   // Your form (Home board): your X01 numbers of the last 30 days, with how the average moved
   // against the 30 days before, and how many games you played in all modes.
-  import { hrefs } from '$lib/routes'
+  import { flag } from '$lib/flags'
   import { ArrowDown, ArrowUp } from '@lucide/svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import AverageSpark from './AverageSpark.svelte'
@@ -9,8 +9,9 @@
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { Loader } from '$lib/home/loader.svelte'
-  import { formForm } from '$lib/home/view'
+  import { formForm, fullStatsLink } from '$lib/home/view'
 
+  const statsOn = flag('stats.enabled')
   const stats = new Loader(() => api.GET('/api/games/stats', { params: { query: { days: 30 } } }))
 
   const form = $derived(stats.data ? formForm(stats.data) : null)
@@ -26,7 +27,7 @@
   )
 </script>
 
-<HomeSection title="Your form" link={{ label: 'Full stats', href: hrefs.profile() }} loading={stats.loading} error={stats.error}>
+<HomeSection title="Your form" link={fullStatsLink($statsOn)} loading={stats.loading} error={stats.error}>
   {#if $currentUser}
     <div class="flex items-center gap-3">
       <Avatar name={$currentUser.name} face={{ userId: $currentUser.id, avatar: $currentUser.avatar }} size={40} tone="accent" />

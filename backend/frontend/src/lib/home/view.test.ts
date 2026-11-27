@@ -4,7 +4,19 @@ import type { RankedGame } from '$lib/ranked/view'
 import { NEWS, visibleNews } from './news'
 import { visibleFeatured, type FeaturedSlide } from './featured'
 import type { FlagKey } from '$shared/flags'
-import { activityText, formForm, greeting, lastFive, lobbyLine, longDate, rankProgress, recentRow, relativeTime, trend } from './view'
+import {
+  activityText,
+  formForm,
+  fullStatsLink,
+  greeting,
+  lastFive,
+  lobbyLine,
+  longDate,
+  rankProgress,
+  recentRow,
+  relativeTime,
+  trend,
+} from './view'
 
 const at = (h: number, m = 0) => new Date(2026, 9, 27, h, m)
 
@@ -270,5 +282,12 @@ describe('news', () => {
   it('shows at most three, skipping items about features the player does not have', () => {
     const items = [item('a', '4', 'lights.enabled'), item('b', '3'), item('c', '2'), item('d', '1'), item('e', '0')]
     expect(visibleNews(items, () => false).map(n => n.id)).toEqual(['b', 'c', 'd'])
+  })
+})
+
+describe('fullStatsLink', () => {
+  it('links to the Stats overview with the flag on and is hidden with it off', () => {
+    expect(fullStatsLink(true)).toEqual({ label: 'Full stats', href: '#/stats' })
+    expect(fullStatsLink(false)).toBeUndefined()
   })
 })

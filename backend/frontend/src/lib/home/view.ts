@@ -7,6 +7,7 @@ import { LOCALE, calendarDaysAgo, dayMonth, plural } from '$lib/fmt'
 import { playerBadges, resultLabel } from '$lib/history'
 import type { RankedGame, RankedRating } from '$lib/ranked/view'
 import { nextStage, rank } from '$shared/ranked.js'
+import { hrefs } from '$lib/routes'
 
 export type HomeEvent = components['schemas']['HomeEvent']
 export type HomeLobby = components['schemas']['HomeLobbies']['lobbies'][number]
@@ -124,3 +125,6 @@ export function recentRow(game: GameSummary, now: Date): { id: string; title: st
       .join(' · '),
   }
 }
+
+/** Your form's "Full stats" link: the Stats overview, hidden while stats.enabled is off. */
+export const fullStatsLink = (statsOn: boolean) => (statsOn ? { label: 'Full stats', href: hrefs.stats() } : undefined)
