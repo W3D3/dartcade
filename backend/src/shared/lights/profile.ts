@@ -75,6 +75,12 @@ export const DEFAULT_PROFILE: Profile = {
     flash('golf.sunk', { color: 'seat', fx: SPARKLE, bri: 255 }, 2000),
     // Higher Lower
     flash('hilo.lifeLost', { color: RED, fx: BLINK, bri: 255 }, 1500),
+    // Dungeon: the whole party plays at one board, so its run's end lights for any seat
+    flash('dungeon.hit', { color: 'seat', fx: SPARKLE, bri: 255 }, 1000),
+    flash('dungeon.kill', { color: '#ffffff', fx: FIREWORKS, bri: 255 }, 1500),
+    flash('dungeon.hurt', { color: RED, fx: BLINK, bri: 255 }, 1000),
+    flash('dungeon.victory', { preset: 'Matchshot', state: PRESET_MATCHSHOT }, 5000, { seats: 'any' }),
+    flash('dungeon.defeat', { color: RED, fx: BREATHE, bri: 255, speed: 60 }, 4000, { seats: 'any' }),
   ],
 }
 

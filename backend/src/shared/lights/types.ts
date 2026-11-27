@@ -20,6 +20,11 @@ export type Trigger =
   | { kind: 'hilo.lifeLost'; seat: number }
   | { kind: 'golf.sunk'; seat: number; strokes: number }
   | { kind: 'bulloff.won'; seat: number }
+  | { kind: 'dungeon.hit'; seat: number }
+  | { kind: 'dungeon.kill'; seat: number }
+  | { kind: 'dungeon.hurt'; seat: number }
+  | { kind: 'dungeon.victory' }
+  | { kind: 'dungeon.defeat' }
 
 export type TriggerKind = Trigger['kind']
 

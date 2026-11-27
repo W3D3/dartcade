@@ -59,7 +59,7 @@ describe('lights view', () => {
   })
   it('groups the effects by game, General first, keeping each rule’s place in the profile', () => {
     const groups = effectGroups(DEFAULT_PROFILE.rules)
-    expect(groups.map(g => g.title)).toEqual(['General', 'X01', 'Cricket', '121', 'Minigolf', 'Higher Lower'])
+    expect(groups.map(g => g.title)).toEqual(['General', 'X01', 'Cricket', '121', 'Minigolf', 'Higher Lower', 'Dungeon'])
     expect(groups.find(g => g.game === 'minigolf')?.items.map(i => ruleLabel(i.rule).when)).toEqual(['Ball sunk'])
     expect(groups.find(g => g.game === 'hilo')?.items.map(i => ruleLabel(i.rule).when)).toEqual(['Life lost'])
     // Every rule is in exactly one group, and its index points back at it

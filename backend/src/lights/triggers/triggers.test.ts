@@ -207,6 +207,46 @@ describe('other games', () => {
     expect(triggersFor(p121([0, 1]), p121([1, 1]))).toEqual([{ kind: 'p121.made', seat: 0 }])
     expect(triggersFor(p121([1, 1]), p121([1, 1]))).toEqual([])
   })
+  describe('dungeon', () => {
+    type T = { seat: number; total: number; enemies: { uid: string; hpBefore: number; hpAfter: number }[] }
+    type O = { trace?: T | null; hits?: number[]; round?: number; outcome?: string | null; winner?: number | null; currentPlayer?: number }
+    const g = (o: O = {}) =>
+      snap('dungeon', {
+        phase: o.outcome ? 'ended' : 'battle',
+        currentPlayer: o.currentPlayer ?? 0,
+        winner: o.winner ?? null,
+        outcome: o.outcome ?? null,
+        trace: o.trace ?? null,
+        battle: o.hits
+          ? {
+              round: o.round ?? 2,
+              lastEnemyTurn: { attacks: [{ uid: 'e0', hits: o.hits.map((damage, seat) => ({ seat, blocked: 0, damage })) }], burns: [] },
+            }
+          : null,
+      })
+    const trace = (seat: number, total: number, hpAfter: number): T => ({ seat, total, enemies: [{ uid: 'e0', hpBefore: 50, hpAfter }] })
+    it('a visit that lands is a hit, one that brings an enemy to 0 a kill', () => {
+      expect(triggersFor(g(), g({ trace: trace(1, 30, 20) }))).toEqual([{ kind: 'dungeon.hit', seat: 1 }])
+      expect(triggersFor(g(), g({ trace: trace(0, 60, 0) }))).toEqual([{ kind: 'dungeon.kill', seat: 0 }])
+      expect(triggersFor(g({ trace: trace(1, 30, 20) }), g({ trace: trace(1, 30, 20) }))).toEqual([])
+      expect(triggersFor(g(), g({ trace: trace(0, 0, 50) }))).toEqual([])
+    })
+    it('the enemy turn hurts each hero it damaged', () => {
+      expect(triggersFor(g(), g({ hits: [6, 0, 6] }))).toEqual([
+        { kind: 'dungeon.hurt', seat: 0 },
+        { kind: 'dungeon.hurt', seat: 2 },
+      ])
+    })
+    it('two identical enemy turns in a row both hurt; a snapshot in the same round does not', () => {
+      expect(triggersFor(g({ hits: [6], round: 2 }), g({ hits: [6], round: 3 }))).toEqual([{ kind: 'dungeon.hurt', seat: 0 }])
+      expect(triggersFor(g({ hits: [6], round: 3 }), g({ hits: [6], round: 3 }))).toEqual([])
+    })
+    it('the run ends in Victory or Defeat, never the shared game won', () => {
+      expect(triggersFor(g(), g({ outcome: 'victory', winner: 0 }))).toEqual([{ kind: 'dungeon.victory' }])
+      expect(triggersFor(g(), g({ outcome: 'defeat', winner: 0 }))).toEqual([{ kind: 'dungeon.defeat' }])
+      expect(triggersFor(g({ outcome: 'defeat', winner: 0 }), g({ outcome: 'defeat', winner: 0 }))).toEqual([])
+    })
+  })
   it('hilo: a life lost', () => {
     const g = (lives: number) => snap('hilo', { phase: 'game', currentPlayer: 0, winner: null, seats: [{ lives }, { lives: 3 }] })
     expect(triggersFor(g(3), g(2))).toEqual([{ kind: 'hilo.lifeLost', seat: 0 }])

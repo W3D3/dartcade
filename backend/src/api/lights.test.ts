@@ -533,7 +533,7 @@ describe('light profiles', () => {
     const res = await app.inject({ method: 'POST', url: `${url}/profiles/import`, payload: file })
     expect(res.statusCode).toBe(201)
     expect(res.json()).toMatchObject({ id: 'new-1', name: 'Mine 2', imported: DEFAULT_PROFILE.rules.length })
-    expect(res.json().ignored).toEqual(['effect 16: unknown effect "nope"'])
+    expect(res.json().ignored).toEqual([`effect ${DEFAULT_PROFILE.rules.length + 1}: unknown effect "nope"`])
     expect(dbLights.deleteLightProfile).not.toHaveBeenCalled()
     expect(dbLights.setBoardProfile).toHaveBeenCalledWith(expect.anything(), 'board-1', 'new-1')
     expect(lights.devicesChanged).toHaveBeenCalledWith('board-1')

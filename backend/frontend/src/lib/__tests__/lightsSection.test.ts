@@ -114,7 +114,7 @@ describe('LightProfileCard', () => {
   it("every ▶ Test button is disabled when lights can't be tested (bridge offline)", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: false, ...handlers } }).body
     const testButtons = [...html.matchAll(/<button([^>]*aria-label="Test rule \d+:[^"]*"[^>]*)>/g)]
-    expect(testButtons.length).toBe(15)
+    expect(testButtons.length).toBe(DEFAULT_PROFILE.rules.length)
     for (const [, attrs] of testButtons) expect(attrs).toContain('disabled')
   })
 

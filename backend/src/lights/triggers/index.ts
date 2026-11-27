@@ -1,6 +1,7 @@
 import type { Snapshot } from '../../schema/game-ws.js'
 import type { Trigger } from '../../shared/lights/index.js'
 import { cricketTriggers } from './cricket.js'
+import { dungeonTriggers } from './dungeon.js'
 import { commonTriggers } from './common.js'
 import { hiloTriggers } from './hilo.js'
 import { minigolfTriggers } from './minigolf.js'
@@ -15,8 +16,9 @@ export function triggersFor(before: Snapshot | null, after: Snapshot): Trigger[]
   // drop the common one fired later, at takeout, so Matchshot plays once. A round-limit win (no
   // checkout, backend/src/games/x01.ts's roundLimitWinner) never fires it from x01Triggers, so the
   // common one here is the only one and must stay.
+  // Dungeon ends in Victory or Defeat of its own (dungeonTriggers): a lost run sets a winner too.
   const checkedOut = after.gameId === 'x01' && after.game.winner !== null && after.game.scores[after.game.winner] === 0
-  const filtered = checkedOut ? common.filter(t => t.kind !== 'game.won') : common
+  const filtered = checkedOut || after.gameId === 'dungeon' ? common.filter(t => t.kind !== 'game.won') : common
   return [...gameTriggers(prev, after), ...filtered]
 }
 
@@ -32,11 +34,12 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
       return cricketTriggers(before?.gameId === 'cricket' ? before.game : null, after.game)
     case 'p121':
       return p121Triggers(before?.gameId === 'p121' ? before.game : null, after.game)
+    case 'dungeon':
+      return dungeonTriggers(before?.gameId === 'dungeon' ? before.game : null, after.game)
     case 'atc':
     case 'mission':
     case 'catch40':
     case 'shanghai':
-    case 'dungeon':
       return []
   }
 }
