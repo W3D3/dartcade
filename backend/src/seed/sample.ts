@@ -54,6 +54,7 @@ export const GAMES: SampleGame[] = [
   { game: 'cricket', config: { mode: 'cutthroat' }, players: ['admin', 'phil', 'michael'] },
   ...COACH_GAMES.map(({ players, config, script }): SampleGame => ({ game: 'x01', config, players, script })),
   { game: 'x01', config: { startScore: 501, firstTo: 1 }, players: ['admin', 'luke', 'gerwyn', 'phil'] },
+  { game: 'dungeon', config: { difficulty: 'easy', floors: 5 }, players: ['admin', 'luke'] },
 ]
 
 const TAKEOUT: UserAction = { type: 'takeout' }
@@ -117,6 +118,16 @@ function aim(session: Session, up: number, thrown: number): Point | UserAction {
     case 'mission': {
       const v = m.view(session.currentState, session.players)
       return v.visitLocked || thrown >= 3 ? TAKEOUT : pointFor('T20')
+    }
+    // Classes in seat order, doubles in a fight, the left room, the first treasure and the first decision
+    case 'dungeon': {
+      const v = m.view(session.currentState, session.players)
+      const seat = v.currentPlayer
+      if (v.phase === 'setup') return { type: 'dungeon_pick_class', seat, classId: ['archer', 'brawler', 'mage', 'guardian'][seat] }
+      if (v.phase === 'treasure') return { type: 'dungeon_choose_reward', seat, index: 0 }
+      if (v.phase === 'event') return { type: 'dungeon_vote', seat, decision: 0 }
+      if (v.visitLocked || thrown >= 3) return TAKEOUT
+      return pointFor(v.phase === 'map' ? 'S19' : 'D19')
     }
   }
 }

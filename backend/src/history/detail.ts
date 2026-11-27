@@ -5,6 +5,7 @@ import type {
   AtcDetail,
   Catch40Detail,
   CricketDetail,
+  DungeonDetail,
   HiloDetail,
   MatchStats,
   MinigolfDetail,
@@ -28,6 +29,7 @@ export type Detail =
   | CricketDetail
   | MissionDetail
   | ShanghaiDetail
+  | DungeonDetail
 type Built = { detail: Detail; stats: MatchStats }
 
 // Bump when a mode's detail() or matchStats() output changes without its module version: every

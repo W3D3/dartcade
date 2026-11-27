@@ -116,6 +116,7 @@ describe('flags', () => {
       { key: 'gamemode.hilo.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.cricket.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.shanghai.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'gamemode.dungeon.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'missions.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'auth.passkeys.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },

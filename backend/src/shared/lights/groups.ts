@@ -31,4 +31,5 @@ export const GROUP_ORDER: readonly (GameId | null)[] = [
   'hilo',
   'mission',
   'shanghai',
+  'dungeon',
 ]

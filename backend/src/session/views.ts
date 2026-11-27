@@ -3,6 +3,7 @@ import type {
   BullOffView,
   Catch40Game,
   CricketGame,
+  DungeonGame,
   HiloGame,
   MinigolfGame,
   MissionGame,
@@ -61,3 +62,6 @@ export type CricketModuleView = CricketView & BullOffViewField
 
 /** What missionModule.view() returns. */
 export type MissionView = Omit<MissionGame, EngineViewField>
+
+/** What dungeonModule.view() returns. */
+export type DungeonView = Omit<DungeonGame, EngineViewField>

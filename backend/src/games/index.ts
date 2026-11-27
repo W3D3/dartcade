@@ -1,6 +1,7 @@
 import { atcModule } from './atc.js'
 import { catch40Module } from './catch40.js'
 import { cricketModule } from './cricket.js'
+import { dungeonModule } from './dungeon.js'
 import { hiloModule } from './hilo.js'
 import { minigolfModule } from './minigolf.js'
 import { missionModule } from './mission.js'
@@ -20,6 +21,7 @@ export const gameList: AnyGameModule[] = [
   p121Module,
   catch40Module,
   minigolfGame,
+  dungeonModule,
   hiloModule,
   cricketModule,
   missionModule,

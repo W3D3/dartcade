@@ -84,6 +84,7 @@ export function winMeta(snapshot: Snapshot): string {
   }
   if (snapshot.gameId === 'cricket') return rulesOf('cricket', snapshot.game.config, n) + vs
   if (snapshot.gameId === 'mission') return rulesOf('mission', { mission: snapshot.game.mission }, n)
+  if (snapshot.gameId === 'dungeon') return rulesOf('dungeon', { difficulty: snapshot.game.difficulty, floors: snapshot.game.floors }, n)
   if (snapshot.gameId === 'catch40') return rulesOf('catch40', {}, n) + vs
   return rulesOf(snapshot.gameId, snapshot.game.cfg, n) + vs
 }
@@ -550,8 +551,9 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
     case 'p121':
     case 'catch40':
       return null
-    // A mission gets its own result screen (Missions part 2)
+    // A mission gets its own result screen (Missions part 2), a Dungeon run its summary
     case 'mission':
+    case 'dungeon':
       return null
     // A forfeit ends Cricket without a winner too: the server's places rank the forfeited side last
     case 'cricket':

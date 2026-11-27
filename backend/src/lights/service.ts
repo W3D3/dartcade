@@ -85,6 +85,8 @@ function seatCountOf(snap: Snapshot): number {
       return snap.game.marks.length
     case 'mission':
       return 1
+    case 'dungeon':
+      return snap.game.heroes.length
   }
 }
 

@@ -1,7 +1,8 @@
 <script lang="ts">
   // The result hero, at the top of the page. Duel and teams: both sides facing each other around
   // the score (3–1), the Winner tag on the winner; teams list their players under the name.
-  // Three or more: a card per player in finishing order, each with its place and score. Names wrap
+  // Three or more: a card per player in finishing order, each with its place and score. A co-op game
+  // (Dungeon): the party side by side under one Victory or Defeat, no places. Names wrap
   // instead of being cut, so a long one costs a line, never its end. Phones: both sides in one row
   // and the score below them, so a wide score ("21–28") never squeezes the names away.
   import Avatar from '$lib/components/Avatar.svelte'
@@ -9,11 +10,15 @@
   import type { GameDetail } from '$lib/api'
   import { ordinal } from '$lib/fmt'
   import { headline, type DetailSide } from '$lib/details/page'
+  import { resultLabel } from '$lib/history'
+  import { isCoop } from '$shared/gameNames'
 
   let { detail, sides }: { detail: GameDetail; sides: DetailSide[] } = $props()
   const head = $derived(headline(detail, sides))
   const solo = $derived(sides.length === 1)
   const party = $derived(sides.length >= 3)
+  const coop = $derived(isCoop(detail.game.mode))
+  const outcome = $derived(resultLabel(detail.game))
   const placed = $derived(sides.map((s, i) => ({ s, score: head.scores[i] ?? '' })).sort((a, b) => a.s.placement - b.s.placement))
   // Smaller on phones, where it sits in a narrow column under the name
   const PILL =
@@ -23,7 +28,7 @@
 {#snippet tag(s: DetailSide)}
   {#if s.forfeited}
     <span class="{PILL} border border-danger-line text-danger-text">Gave up</span>
-  {:else if s.placement === 1 && sides.length > 1}
+  {:else if s.placement === 1 && sides.length > 1 && !coop}
     <span class="{PILL} bg-accent text-accent-fg">Winner</span>
   {/if}
 {/snippet}
@@ -67,7 +72,19 @@
   </div>
 {/snippet}
 
-{#if party}
+{#if coop}
+  <section aria-label="Result" class="flex flex-col items-center gap-4 p-5 md:p-8 rounded-panel bg-surface-active border-2 border-accent">
+    <span class="font-display font-bold text-6xl md:text-7xl leading-[0.85] {outcome.won ? 'text-accent' : 'text-text-muted'}"
+      >{outcome.text}</span
+    >
+    <ul class="w-full grid grid-cols-[repeat(auto-fit,minmax(min(100%,180px),1fr))] gap-3">
+      {#each sides as s (s.index)}
+        <li class="flex flex-col items-center min-w-0 p-4 rounded-lg border border-line bg-surface-1">{@render side(s, 'center')}</li>
+      {/each}
+    </ul>
+    {#if head.caption}<span class="text-caption label-caps text-text-muted text-center">{head.caption}</span>{/if}
+  </section>
+{:else if party}
   <section aria-label="Result" class="flex flex-col gap-3 p-4 md:p-5 rounded-panel bg-surface-active border-2 border-accent">
     <ol class="grid grid-cols-[repeat(auto-fit,minmax(min(100%,210px),1fr))] gap-3">
       {#each placed as { s, score } (s.index)}

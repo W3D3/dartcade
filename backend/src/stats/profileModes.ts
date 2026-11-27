@@ -1,5 +1,5 @@
 import type { components } from '../schema/api.js'
-import { isGameId, type GameId } from '../shared/gameNames.js'
+import { isGameId, isUncounted, type GameId, type UncountedId } from '../shared/gameNames.js'
 
 type ModeStats = components['schemas']['ProfileModeStats']
 type Tile = ModeStats['tiles'][number]
@@ -31,8 +31,8 @@ function winTiles(rows: SeatRow[]): Raw[] {
 }
 
 // A mode lists only what its seat stats really hold; a tile without a value is left out.
-// One entry per mode, kept complete by the compiler. Missions never get here (`gameCounts` leaves them out).
-const MODE_TILES: Record<Exclude<GameId, 'mission'>, (rows: SeatRow[]) => Raw[]> = {
+// One entry per mode, kept complete by the compiler. Practice modes never get here (`gameCounts` leaves them out).
+const MODE_TILES: Record<Exclude<GameId, UncountedId>, (rows: SeatRow[]) => Raw[]> = {
   x01: rows => [
     ...winTiles(rows),
     decimal('average', '3-dart average', ratio(sum(rows, 'pointsScored') * 3, sum(rows, 'dartsThrown'))),
@@ -80,7 +80,7 @@ const MODE_TILES: Record<Exclude<GameId, 'mission'>, (rows: SeatRow[]) => Raw[]>
 }
 
 // A mode id from the database that this build doesn't know (an old or removed game) shows wins only
-const tilesOf = (mode: string, rows: SeatRow[]): Raw[] => (isGameId(mode) && mode !== 'mission' ? MODE_TILES[mode](rows) : winTiles(rows))
+const tilesOf = (mode: string, rows: SeatRow[]): Raw[] => (isGameId(mode) && !isUncounted(mode) ? MODE_TILES[mode](rows) : winTiles(rows))
 
 const byMode = (rows: SeatRow[]) => {
   const modes = new Map<string, SeatRow[]>()

@@ -24,6 +24,7 @@ const rows = {
   cricket: { display: [], sounds: dartSounds },
   mission: { display: [], sounds: dartSounds },
   shanghai: { display: [], sounds: dartSounds },
+  dungeon: { display: [], sounds: dartSounds },
 } satisfies Record<GameId, DrawerRows>
 
 export const drawerRows = (gameId: string): DrawerRows => (isGameId(gameId) ? rows[gameId] : { display: [], sounds: dartSounds })

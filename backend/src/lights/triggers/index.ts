@@ -36,6 +36,7 @@ function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {
     case 'mission':
     case 'catch40':
     case 'shanghai':
+    case 'dungeon':
       return []
   }
 }

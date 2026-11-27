@@ -23,6 +23,7 @@ export function gameState(s: Snapshot | null): GameState {
     cricket: s?.gameId === 'cricket' ? s.game : null,
     mission: s?.gameId === 'mission' ? s.game : null,
     shanghai: s?.gameId === 'shanghai' ? s.game : null,
+    dungeon: s?.gameId === 'dungeon' ? s.game : null,
   }
 }
 

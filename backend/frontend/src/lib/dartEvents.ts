@@ -22,6 +22,7 @@ function eventGame(s: Snapshot): EventGame {
     case 'x01':
       return { ...s.game, bust: s.game.bustThisVisit ? s.game.currentPlayer : null }
     case 'atc':
+    case 'dungeon':
       return s.game
     case 'p121':
       return { ...s.game, bust: s.game.bust ? s.game.currentPlayer : null }

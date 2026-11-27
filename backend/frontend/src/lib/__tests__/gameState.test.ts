@@ -35,7 +35,18 @@ const base = {
   ],
 }
 
-const none = { x01: null, atc: null, minigolf: null, p121: null, catch40: null, hilo: null, cricket: null, mission: null, shanghai: null }
+const none = {
+  x01: null,
+  atc: null,
+  minigolf: null,
+  p121: null,
+  catch40: null,
+  hilo: null,
+  cricket: null,
+  mission: null,
+  shanghai: null,
+  dungeon: null,
+}
 
 describe('gameState', () => {
   it('narrows an X01 snapshot', () => {

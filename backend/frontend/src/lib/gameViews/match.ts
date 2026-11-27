@@ -2,6 +2,7 @@
 import type { Component } from 'svelte'
 import type { GameId } from '$shared/gameNames'
 import ScoreMatch from '$lib/components/ScoreMatch.svelte'
+import DungeonScreen from '$lib/components/match/screens/DungeonScreen.svelte'
 import CricketScreen from '$lib/components/match/screens/CricketScreen.svelte'
 import HiloScreen from '$lib/components/match/screens/HiloScreen.svelte'
 import MinigolfScreen from '$lib/components/match/screens/MinigolfScreen.svelte'
@@ -22,4 +23,5 @@ export const MATCH_SCREENS: Record<GameId, Component<MatchProps>> = {
   cricket: CricketScreen,
   mission: MissionScreen,
   shanghai: ShanghaiScreen,
+  dungeon: DungeonScreen,
 }

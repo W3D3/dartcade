@@ -5660,6 +5660,31 @@ components:
               place: { type: integer, minimum: 1 }
               total: { type: integer, minimum: 0 }
               shanghai: { type: boolean, description: This seat ended the game with a Shanghai }
+    DungeonDetail:
+      type: object
+      required: [mode, outcome, difficulty, floors, cleared, gold, seats]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [dungeon] }
+        outcome: { type: string, enum: [victory, defeat, null], nullable: true, description: Null for a run that was given up }
+        difficulty: { type: string, enum: [easy, medium, hard, expert] }
+        floors: { type: integer, minimum: 1, description: 'Floors in the act; the last is the boss' }
+        cleared: { type: integer, minimum: 0, description: Rooms the party finished }
+        gold: { type: integer, minimum: 0 }
+        seats:
+          type: array
+          description: One hero per seat, in seat order, as the run ended
+          items:
+            type: object
+            required: [classId, hp, maxHp, damage, bestVisit, artifacts]
+            additionalProperties: false
+            properties:
+              classId: { type: string, nullable: true }
+              hp: { type: integer, minimum: 0 }
+              maxHp: { type: integer, minimum: 0 }
+              damage: { type: integer, minimum: 0, description: Damage dealt in the run }
+              bestVisit: { type: integer, minimum: 0 }
+              artifacts: { type: array, items: { type: string }, description: 'Artifact ids, in the order the hero got them' }
     CricketDetail:
       type: object
       required: [mode, targets, legs]
@@ -6967,6 +6992,7 @@ components:
             - $ref: '#/components/schemas/CricketDetail'
             - $ref: '#/components/schemas/MissionDetail'
             - $ref: '#/components/schemas/ShanghaiDetail'
+            - $ref: '#/components/schemas/DungeonDetail'
           discriminator:
             propertyName: mode
             mapping:
@@ -6979,6 +7005,7 @@ components:
               cricket: '#/components/schemas/CricketDetail'
               mission: '#/components/schemas/MissionDetail'
               shanghai: '#/components/schemas/ShanghaiDetail'
+              dungeon: '#/components/schemas/DungeonDetail'
         stats: { $ref: '#/components/schemas/MatchStats' }
     AdminGameDetail:
       type: object
