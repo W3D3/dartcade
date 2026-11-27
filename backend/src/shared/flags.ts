@@ -64,6 +64,12 @@ export const FLAG_META = {
     description: 'Shows Shanghai on the Play page.',
     defaultRule: 'admins',
   },
+  'gamemode.dungeon.enabled': {
+    kind: 'boolean',
+    description:
+      'Shows Dungeon on the Play page: a co-op roguelike where the party throws to fight its way up to a boss. Off, no Dungeon game can start.',
+    defaultRule: 'admins',
+  },
   'missions.enabled': {
     kind: 'boolean',
     description:

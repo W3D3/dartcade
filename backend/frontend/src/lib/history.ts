@@ -2,7 +2,7 @@
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
 import { rulesOf } from './gameViews/rules.js'
-import { isGameId, type GameId } from '$shared/gameNames'
+import { isCoop, isGameId, type GameId } from '$shared/gameNames'
 import { fmtClock } from './missions/view.js'
 import { LOCALE, calendarDaysAgo, dayMonth, ordinal } from './fmt.js'
 
@@ -57,6 +57,10 @@ export function resultLabel(game: GameSummary): { text: string; won: boolean } {
   const me = mine(game)
   const n = game.players.length
   if (!me) return { text: '', won: false }
+  if (isCoop(game.mode)) {
+    const won = stat(me, 'victory') === 1
+    return { text: won ? 'Victory' : 'Defeat', won }
+  }
   if (n === 1) return { text: 'Finished', won: false }
   const won = me.placement === 1
   if (n > 2) return { text: `${ordinal(me.placement)} of ${n}`, won }
@@ -89,6 +93,13 @@ const LIST_STAT = {
     return done === undefined ? null : { value: `${done}/${stat(me, 'steps') ?? done}`, label: ms ? `steps · ${fmtClock(ms)}` : 'steps' }
   },
   shanghai: me => value(stat(me, 'total'), 'points'),
+  // "4 rooms · victory"
+  dungeon: me => {
+    const cleared = stat(me, 'cleared')
+    return cleared === undefined
+      ? null
+      : { value: String(cleared), label: `${cleared === 1 ? 'room' : 'rooms'} · ${stat(me, 'victory') ? 'victory' : 'defeat'}` }
+  },
   cricket: me => {
     const mpr = stat(me, 'mpr')
     return mpr === undefined ? null : { value: mpr.toFixed(1), label: 'MPR' }
@@ -198,8 +209,9 @@ const MODE_TILES = {
     const marks = modeStat(s, 'cricket', 'marksScored')
     return [plain('MPR', mpr ? mpr.avg.toFixed(1) : NONE), plain('Marks scored', marks ? String(marks.sum) : NONE)]
   },
-  // Missions count for no stats
+  // Practice modes count for no stats
   mission: () => [],
+  dungeon: () => [],
 } satisfies Record<GameId, (s: GameStats) => Tile[]>
 
 const COLUMNS_KEY = 'dartcade_history_columns_v1'

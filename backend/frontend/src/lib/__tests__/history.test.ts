@@ -112,6 +112,16 @@ describe('players and result', () => {
     expect(resultLabel({ ...party, mySeat: 1 })).toEqual({ text: '2nd of 3', won: false })
     expect(resultLabel(party)).toEqual({ text: '1st of 3', won: true })
   })
+  it('co-op: the party wins or loses together, whatever its shared place', () => {
+    const run = (victory: number, n: number) =>
+      game({
+        mode: 'dungeon',
+        players: Array.from({ length: n }, (_, seat) => ({ ...game().players[0], seat, placement: 1, stats: { victory } })),
+      })
+    expect(resultLabel(run(0, 2))).toEqual({ text: 'Defeat', won: false })
+    expect(resultLabel(run(0, 3))).toEqual({ text: 'Defeat', won: false })
+    expect(resultLabel(run(1, 1))).toEqual({ text: 'Victory', won: true })
+  })
   it('solo', () => {
     const solo = game({ players: [game().players[0]] })
     expect(playerBadges(solo).map(({ n, name, me }) => ({ n, name, me }))).toEqual([{ n: 1, name: 'Christoph', me: true }])

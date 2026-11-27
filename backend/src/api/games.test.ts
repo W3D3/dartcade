@@ -97,6 +97,7 @@ describe('GET /api/gamemodes', () => {
       'p121',
       'catch40',
       'minigolf',
+      'dungeon',
       'hilo',
       'cricket',
       'shanghai',

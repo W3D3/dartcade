@@ -25,6 +25,8 @@ const P121ConfigSchema = z.object({ startTarget: int, tries: int, dartsPerTry: i
 const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
 const ShanghaiConfigSchema = z.object({ start: int, end: int, bullRound: z.boolean().catch(false), shanghaiWins: z.boolean().catch(true) })
 const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
+const DungeonConfigSchema = z.object({ difficulty: z.enum(['easy', 'medium', 'hard', 'expert']), floors: int })
+const DUNGEON_DIFFICULTY = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' } as const
 const MissionConfigSchema = z.object({
   mission: z.object({ name: z.string(), order: z.enum(['any', 'in_order']), steps: z.array(z.unknown()) }),
 })
@@ -97,6 +99,11 @@ const RULES = {
   shanghai: config => {
     const c = ShanghaiConfigSchema.safeParse(config)
     return c.success ? shanghaiRules(c.data) : ''
+  },
+  // "Medium · 9 floors"
+  dungeon: config => {
+    const c = DungeonConfigSchema.safeParse(config)
+    return c.success ? `${DUNGEON_DIFFICULTY[c.data.difficulty]} · ${c.data.floors} floors` : ''
   },
   minigolf: (config, players, { course }) => {
     const c = MinigolfConfigSchema.safeParse(config)

@@ -625,6 +625,7 @@ export type Snapshot =
   | CricketSnapshot
   | MissionSnapshot
   | ShanghaiSnapshot
+  | DungeonSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "MissionSnapshot".
@@ -694,6 +695,144 @@ export type MissionStep =
   | MissionLegStep
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonSnapshot".
+ */
+export type DungeonSnapshot = SnapshotBase & {
+  gameId: 'dungeon'
+  game: DungeonGame
+}
+/**
+ * A Dungeon run (backend/src/games/dungeon.ts) plus the engine's per-session fields. Content is sent by id; names, texts and hooks are in shared/dungeon/content.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonGame".
+ */
+export type DungeonGame = EngineGameFields & {
+  phase: 'setup' | 'map' | 'battle' | 'treasure' | 'rest' | 'event' | 'ended'
+  difficulty: 'easy' | 'medium' | 'hard' | 'expert'
+  /**
+   * Floors in the act; the last is the boss.
+   */
+  floors: number
+  /**
+   * The floor the party is on; 0 before the first room.
+   */
+  floor: number
+  room: DungeonSide | null
+  /**
+   * Rooms finished.
+   */
+  cleared: number
+  /**
+   * Floors from 1 up; each room leads to every room of the floor above.
+   */
+  map: {
+    side: DungeonSide
+    type: 'fight' | 'elite' | 'boss' | 'treasure' | 'rest' | 'event' | 'shop'
+  }[][]
+  /**
+   * The map vote, per seat.
+   */
+  votes: (DungeonSide | null)[]
+  currentPlayer: number
+  nextPlayer: number | null
+  /**
+   * Set (to 0) once the run is over, won or lost: see outcome.
+   */
+  winner: number | null
+  outcome: ('victory' | 'defeat') | null
+  /**
+   * No more darts count this visit: it was resolved, the vote is cast, or this phase takes no darts.
+   */
+  visitLocked: boolean
+  gold: number
+  heroes: DungeonHero[]
+  /**
+   * Segment items on the board.
+   */
+  items: {
+    number: number
+    item: string
+  }[]
+  battle: {
+    room: 'fight' | 'elite' | 'boss'
+    round: number
+    /**
+     * The front living enemy.
+     */
+    target: string | null
+    enemies: DungeonEnemy[]
+    lastEnemyTurn: {
+      attacks: {
+        uid: string
+        hits: {
+          seat: number
+          blocked: number
+          damage: number
+        }[]
+      }[]
+      burns: {
+        uid: string
+        damage: number
+      }[]
+    } | null
+  } | null
+  trace: DungeonTrace | null
+  /**
+   * Treasure: each seat's artifacts to pick from; null once picked.
+   */
+  offers: (string[] | null)[] | null
+  event: {
+    id: string
+    votes: (number | null)[]
+  } | null
+  lastEvent: {
+    id: string
+    decision: number
+    items: {
+      number: number
+      item: string
+    }[]
+    artifacts: {
+      seat: number
+      artifact: string
+    }[]
+  } | null
+  lastHeal: {
+    seat: number
+    amount: number
+  } | null
+  /**
+   * Damage dealt in the run, per seat.
+   */
+  damage: number[]
+  bestVisit: number[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonSide".
+ */
+export type DungeonSide = 'left' | 'right'
+/**
+ * A spot an enemy is weak to, resists or is immune to: a number, or a ring of any number (bull: both bulls).
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonSpot".
+ */
+export type DungeonSpot =
+  | {
+      number: number
+    }
+  | {
+      ring: 'single' | 'double' | 'treble' | 'bull' | 'bullseye'
+    }
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonRing".
+ */
+export type DungeonRing = 'single' | 'double' | 'treble' | 'bull' | 'bullseye' | 'miss'
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
  */
 export type UserAction =
@@ -712,6 +851,9 @@ export type UserAction =
   | MissionResumeAction
   | MissionGiveUpAction
   | MissionClockAction
+  | DungeonPickClassAction
+  | DungeonChooseRewardAction
+  | DungeonVoteAction
 
 /**
  * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
@@ -1471,6 +1613,93 @@ export interface MissionChip {
   gain: number
   outcome: 'go' | 'done' | 'fail' | 'visit_over'
 }
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonHero".
+ */
+export interface DungeonHero {
+  seat: number
+  classId: string | null
+  healSegment: number | null
+  hp: number
+  maxHp: number
+  block: number
+  /**
+   * Artifact ids (shared/dungeon/content/artifacts.ts), in the order the hero got them.
+   */
+  artifacts: string[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonEnemy".
+ */
+export interface DungeonEnemy {
+  uid: string
+  /**
+   * Enemy id (shared/dungeon/content/enemies.ts).
+   */
+  kind: string
+  hp: number
+  maxHp: number
+  burn: number
+  chilled: boolean
+  /**
+   * What it does at the end of this round.
+   */
+  intent: {
+    kind: 'attack' | 'none'
+    /**
+     * Damage per hero after the difficulty and Chill, before block.
+     */
+    value: number | null
+    pierce: boolean
+  }
+  weak: DungeonSpot[]
+  resist: DungeonSpot[]
+  immune: DungeonSpot[]
+}
+/**
+ * The last resolved visit, for the damage popup (shared/dungeon/resolve.ts).
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonTrace".
+ */
+export interface DungeonTrace {
+  seat: number
+  darts: {
+    number: number
+    ring: DungeonRing
+    target: string | null
+    steps: DungeonTraceStep[]
+    damage: number
+    hpBefore: number
+    hpAfter: number
+    killed: boolean
+  }[]
+  afterVisit: DungeonTraceStep[]
+  total: number
+  targetHp: number
+  enemies: {
+    uid: string
+    hpBefore: number
+    hpAfter: number
+  }[]
+}
+/**
+ * One effect as it fired; base and mult are the dart's running values after it.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "DungeonTraceStep".
+ */
+export interface DungeonTraceStep {
+  source: 'dart' | 'segment' | 'artifact' | 'class' | 'weakness' | 'resist' | 'immune' | 'afterVisit'
+  id: string | null
+  effect: 'base_add' | 'mult_add' | 'mult_mul' | 'block' | 'heal' | 'burn' | 'chill' | 'gold' | 'damage'
+  value: number
+  base: number
+  mult: number
+  target: string | null
+}
 export interface UndoDartAction {
   type: 'undo_dart'
 }
@@ -1560,6 +1789,31 @@ export interface MissionGiveUpAction {
  */
 export interface MissionClockAction {
   type: 'mission_clock'
+}
+/**
+ * Dungeon, setup: a hero picks a class (the Healer also its number).
+ */
+export interface DungeonPickClassAction {
+  type: 'dungeon_pick_class'
+  seat: number
+  classId: string
+  healSegment?: number
+}
+/**
+ * Dungeon, treasure: a hero takes one artifact of their offer.
+ */
+export interface DungeonChooseRewardAction {
+  type: 'dungeon_choose_reward'
+  seat: number
+  index: number
+}
+/**
+ * Dungeon, event: a hero votes for a decision.
+ */
+export interface DungeonVoteAction {
+  type: 'dungeon_vote'
+  seat: number
+  decision: number
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

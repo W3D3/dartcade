@@ -38,6 +38,9 @@ function meta(s: Snapshot): string {
       return rulesOf('mission', { mission: s.game.mission }, s.players.length)
     case 'shanghai':
       return shanghaiMeta(s.game, s.players.length)
+    // "Act 1 · Floor 4 of 9" (Dungeon-Pixel-Map's header)
+    case 'dungeon':
+      return `Act 1 · Floor ${Math.max(1, s.game.floor)} of ${s.game.floors}`
     default: {
       // A new game id fails to compile here until it has a line; one from a newer server gets none
       const _unknown: never = s

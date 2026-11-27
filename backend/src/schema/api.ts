@@ -4515,6 +4515,36 @@ export interface components {
                 shanghai: boolean;
             }[];
         };
+        DungeonDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "dungeon";
+            /**
+             * @description Null for a run that was given up
+             * @enum {string|null}
+             */
+            outcome: "victory" | "defeat" | null;
+            /** @enum {string} */
+            difficulty: "easy" | "medium" | "hard" | "expert";
+            /** @description Floors in the act; the last is the boss */
+            floors: number;
+            /** @description Rooms the party finished */
+            cleared: number;
+            gold: number;
+            /** @description One hero per seat, in seat order, as the run ended */
+            seats: {
+                classId: string | null;
+                hp: number;
+                maxHp: number;
+                /** @description Damage dealt in the run */
+                damage: number;
+                bestVisit: number;
+                /** @description Artifact ids, in the order the hero got them */
+                artifacts: string[];
+            }[];
+        };
         CricketDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -5453,7 +5483,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["Catch40Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"] | components["schemas"]["ShanghaiDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["Catch40Detail"] | components["schemas"]["HiloDetail"] | components["schemas"]["CricketDetail"] | components["schemas"]["MissionDetail"] | components["schemas"]["ShanghaiDetail"] | components["schemas"]["DungeonDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         AdminGameDetail: {

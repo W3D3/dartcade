@@ -70,6 +70,7 @@ function bullOffNeedsRethrow(session: Session): boolean {
 
 const MANUAL_ACTIONS = new Set(['add_dart', 'correct_dart'])
 const BULL_OFF_ACTIONS = new Set(['bulloff_start', 'bulloff_rethrow'])
+const DUNGEON_CHOICES = new Set(['dungeon_pick_class', 'dungeon_choose_reward', 'dungeon_vote'])
 const SEAT_ACTIONS = new Set([
   'add_dart',
   'undo_dart',
@@ -107,6 +108,10 @@ export function authorizeAction(session: Session, userId: string, action: UserAc
   if (!hasHost(session) && BULL_OFF_ACTIONS.has(action.type)) {
     if (action.type === 'bulloff_rethrow' && !bullOffNeedsRethrow(session)) return null
     return session.seats.some(s => s.controllerUserId === userId) ? action : null
+  }
+  // A Dungeon choice names its hero: the host, or whoever controls that seat
+  if (DUNGEON_CHOICES.has(action.type) && 'seat' in action) {
+    return isHost(userId, session) || session.seats[action.seat]?.controllerUserId === userId ? action : null
   }
   // The bull off's start/rethrow and any game action decide for everyone: the host
   return isHost(userId, session) ? action : null

@@ -12,6 +12,7 @@
   import type { ConfigFieldMeta } from '$lib/api'
   import { userCourses } from '$lib/minigolf/userCourses'
   import { GAME_MODES } from '$lib/gameModes'
+  import { isGameId, type GameId } from '$shared/gameNames'
 
   let {
     gameId,
@@ -86,11 +87,16 @@
   const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
   const setMaxStrokes = (n: number) => set('maxStrokes', clamp(n, 3, 10))
 
-  // ATC config fields in display order — populated from backend configMeta
-  const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
-
-  // 121 config fields in display order (Catch 40 shows the same form, which has only the bull off) — populated from backend configMeta (bullOff comes from withBullOff)
-  const P121_FIELD_ORDER = ['startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff'] as const
+  // Modes whose whole form is one segmented control per configMeta option, in display order (Catch 40
+  // shows 121's form, which has only the bull off; bullOff comes from withBullOff)
+  const P121_FIELDS = ['startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff']
+  const OPTION_FIELDS = new Map<GameId, string[]>([
+    ['atc', ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit']],
+    ['p121', P121_FIELDS],
+    ['catch40', P121_FIELDS],
+    ['dungeon', ['difficulty', 'floors']],
+  ])
+  const optionFields = $derived(isGameId(gameId) ? OPTION_FIELDS.get(gameId) : undefined)
 
   // Higher Lower's toggles in display order — populated from backend configMeta (bullOff comes from withBullOff);
   // startHigh/startLow/lives have no options (they're Steppers, below)
@@ -247,32 +253,9 @@
       />
     </div>
   </div>
-{:else if gameId === 'atc'}
+{:else if optionFields}
   <div class={root}>
-    {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
-      {@const field = meta[fieldKey]}
-      {#if field?.options}
-        <fieldset class="border-0 flex flex-col gap-2">
-          <legend class="flex items-center gap-2 field-label mb-2">
-            {field.label}
-            {#if field.tooltip}
-              <Tooltip text={field.tooltip} />
-            {/if}
-          </legend>
-          <SegmentedControl
-            options={field.options}
-            value={config[fieldKey]}
-            defaultValue={defaults[fieldKey]}
-            disabled={readonly}
-            onchange={(v: unknown) => set(fieldKey, v)}
-          />
-        </fieldset>
-      {/if}
-    {/each}
-  </div>
-{:else if gameId === 'p121' || gameId === 'catch40'}
-  <div class={root}>
-    {#each P121_FIELD_ORDER as fieldKey (fieldKey)}
+    {#each optionFields as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
         <fieldset class="border-0 flex flex-col gap-2">

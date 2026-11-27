@@ -73,6 +73,17 @@ describe('details components', () => {
     expect(render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body).not.toContain('Winner')
   })
 
+  it('co-op: one Victory or Defeat for the party, no Winner tag or places', () => {
+    const run = (victory: number): GameDetail => {
+      const d = game(3)
+      return { ...d, game: { ...d.game, mode: 'dungeon', players: d.game.players.map(p => ({ ...p, placement: 1, stats: { victory } })) } }
+    }
+    const lost = render(ResultCard, { props: { detail: run(0), sides: detailSides(run(0)) } }).body
+    expect(lost).toContain('Defeat')
+    expect(lost).not.toContain('Winner')
+    expect(lost).not.toContain('1st')
+    expect(render(ResultCard, { props: { detail: run(1), sides: detailSides(run(1)) } }).body).toContain('Victory')
+  })
   it('shows who gave up instead of a Winner tag', () => {
     const d = game(2)
     d.game.players[0].forfeited = true

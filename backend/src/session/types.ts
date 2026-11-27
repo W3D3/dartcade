@@ -14,6 +14,7 @@ import type {
   AtcView,
   Catch40ModuleView,
   CricketModuleView,
+  DungeonView,
   HiloModuleView,
   MinigolfView,
   MissionView,
@@ -118,6 +119,7 @@ export type HiloDetail = components['schemas']['HiloDetail']
 export type ShanghaiDetail = components['schemas']['ShanghaiDetail']
 export type CricketDetail = components['schemas']['CricketDetail']
 export type MissionDetail = components['schemas']['MissionDetail']
+export type DungeonDetail = components['schemas']['DungeonDetail']
 export type MatchStats = components['schemas']['MatchStats']
 export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'
@@ -265,6 +267,7 @@ export type AnyGameModule =
   | GameModule<unknown, GameConfig, CricketModuleView, 'cricket', CricketDetail>
   | GameModule<unknown, GameConfig, MissionView, 'mission', MissionDetail>
   | GameModule<unknown, GameConfig, ShanghaiModuleView, 'shanghai', ShanghaiDetail>
+  | GameModule<unknown, GameConfig, DungeonView, 'dungeon', DungeonDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>

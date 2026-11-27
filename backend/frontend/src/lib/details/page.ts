@@ -111,6 +111,7 @@ const HEADLINE = {
   catch40: () => NO_HEADLINE,
   hilo: () => NO_HEADLINE,
   mission: () => NO_HEADLINE,
+  dungeon: () => NO_HEADLINE,
   shanghai: (d, sides) => {
     if (d.detail.mode !== 'shanghai') return NO_HEADLINE
     const totals = sides.map(s => (Object.hasOwn(s.values, 'total') ? s.values.total : 0))

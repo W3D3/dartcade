@@ -10,12 +10,22 @@ export const GAME_NAMES = {
   cricket: { title: 'Cricket', short: 'Cricket' },
   mission: { title: 'Mission', short: 'Mission' },
   shanghai: { title: 'Shanghai', short: 'Shanghai' },
+  dungeon: { title: 'Dungeon', short: 'Dungeon' },
 } as const satisfies Record<string, { title: string; short: string }>
 
 export type GameId = keyof typeof GAME_NAMES
 
 /** Modes started only by their own route (a mission, from the missions API): never picked in a lobby, on the Play page or by POST /api/sessions. */
 export const OWN_START: ReadonlySet<GameId> = new Set(['mission'])
+
+/** Practice modes: shown in history, counted for no stats, ratings, form, XP, challenges or achievements (`gameCounts` in db/counts.ts). */
+export const UNCOUNTED = ['mission', 'dungeon'] as const satisfies readonly GameId[]
+export type UncountedId = (typeof UNCOUNTED)[number]
+/** Co-op modes: the whole party wins or loses together (every seat places 1st), so a result reads Victory or Defeat from the seat's `victory` stat, not from the placement. */
+export const COOP = ['dungeon'] as const satisfies readonly GameId[]
+export const isCoop = (id: string): boolean => COOP.some(c => c === id)
+
+export const isUncounted = (id: string): id is UncountedId => UNCOUNTED.some(u => u === id)
 
 export const isGameId = (id: string): id is GameId => Object.hasOwn(GAME_NAMES, id)
 

@@ -11,6 +11,7 @@ import x01Img from './assets/games/x01.svg'
 import atcImg from './assets/games/atc.svg'
 import cricketImg from './assets/games/cricket.svg'
 import minigolfImg from './assets/games/minigolf.svg'
+import dungeonImg from './assets/games/dungeon.svg'
 import p121Img from './assets/games/p121.svg'
 import bobsImg from './assets/games/bobs.svg'
 import soccerImg from './assets/games/soccer.svg'
@@ -115,6 +116,17 @@ export const GAME_MODES: GameMode[] = [
     img: minigolfImg,
     available: true,
     flag: 'gamemode.minigolf.enabled',
+  },
+  {
+    id: 'dungeon',
+    ink: [0.483, 0.261, 0.96, 0.739],
+    glyph: 'DGN',
+    name: GAME_NAMES.dungeon.title,
+    desc: 'Fight your way up to the boss as a party.',
+    cat: 'arcade',
+    img: dungeonImg,
+    available: true,
+    flag: 'gamemode.dungeon.enabled',
   },
   {
     id: 'p121',
