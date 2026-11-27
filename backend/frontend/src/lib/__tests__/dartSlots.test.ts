@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { aimById } from '$shared/coach/aims.js'
-import { x01Slots, atcSlots, boardCheckoutTargets, cricketSlots } from '../dartSlots.js'
+import { x01Slots, atcSlots, boardCheckoutTargets, cricketSlots, missionSlots } from '../dartSlots.js'
 
 const d = (name: string, score: number) => ({ segment: { name }, score })
 const base = { outMode: 'double' as const, opened: true, bust: false, suggest: true }
@@ -187,5 +187,43 @@ describe('cricketSlots', () => {
     expect(s[1]).toMatchObject({ kind: 'miss', label: 'T19', points: '0' })
     expect(s[1].struck).toBeUndefined()
     expect(s[1].aria).toBe('Dart 2: T19, did not count')
+  })
+})
+
+describe('missionSlots', () => {
+  it('each dart with what it did to the step, red when it ended the attempt, then the next dart', () => {
+    const slots = missionSlots({
+      darts: [d('S20', 20), d('S1', 1)],
+      chips: [
+        { gain: 1, outcome: 'go' },
+        { gain: 0, outcome: 'fail' },
+      ],
+      locked: false,
+    })
+    expect(slots.map(s => [s.kind, s.label, s.points, s.alert ?? false])).toEqual([
+      ['thrown', 'S20', '+1', false],
+      ['thrown', 'S1', 'Reset', true],
+      ['empty-next', '', '', false],
+    ])
+  })
+  it('reads what each dart did to the step, never as points', () => {
+    const slots = missionSlots({
+      darts: [d('S20', 20), d('', 0), d('S5', 5)],
+      chips: [
+        { gain: 1, outcome: 'done' },
+        { gain: 0, outcome: 'fail' },
+        { gain: 0, outcome: 'go' },
+      ],
+      locked: false,
+    })
+    expect(slots.map(s => s.aria)).toEqual(['Dart 1: S20, completes the step', 'Dart 2: Miss, ends the attempt', 'Dart 3: S5, no progress'])
+  })
+  it('a dart that completed the step is Done; a locked visit has no next dart', () => {
+    const slots = missionSlots({ darts: [d('Bull', 50)], chips: [{ gain: 0, outcome: 'done' }], locked: true })
+    expect(slots.map(s => [s.kind, s.points])).toEqual([
+      ['thrown', 'Done'],
+      ['empty-later', ''],
+      ['empty-later', ''],
+    ])
   })
 })

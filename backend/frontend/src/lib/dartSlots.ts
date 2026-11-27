@@ -5,11 +5,15 @@ import type { Setup } from '$shared/coach/setup.js'
 import { nextTargetIndex } from '$shared/atc.js'
 import { dartMarks } from './cricket/view.js'
 import { plural } from './fmt.js'
+import { signed } from './missions/view.js'
 import { DARTS_PER_VISIT } from '$shared/darts.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
-/** `struck`: the label is drawn crossed out (Cricket: a dart on a number every team has closed). */
-export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string; struck?: boolean }
+/**
+ * `struck`: the label is drawn crossed out (Cricket: a dart on a number every team has closed).
+ * `alert`: the dart is drawn red (Missions: it ended the attempt).
+ */
+export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string; struck?: boolean; alert?: boolean }
 export type ThrownDart = { segment?: { name?: string; number?: number; multiplier?: number }; score?: number }
 
 function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slot {
@@ -143,6 +147,20 @@ export function shanghaiSlots(o: { darts: ThrownDart[]; hits: boolean[]; target:
   const left = DARTS_PER_VISIT - done.length
   const fits = o.suggest.length > 0 && o.suggest.length <= left
   return [...done, ...openSlots(done.length, fits ? o.suggest.map(label => ({ label, foot: 'for a Shanghai' })) : [])]
+}
+
+/** Missions: each thrown dart with what it did to the step ("+1", "Done", "Reset" when it ended the
+ *  attempt), then the next dart; a visit that no longer counts (locked) is over. */
+export function missionSlots(o: { darts: ThrownDart[]; chips: readonly { gain: number; outcome: string }[]; locked: boolean }): Slot[] {
+  const done = o.darts.slice(0, DARTS_PER_VISIT).map((d, i) => {
+    const c = o.chips.at(i) ?? { gain: 0, outcome: 'go' }
+    const fail = c.outcome === 'fail'
+    const done = c.outcome === 'done'
+    const slot = thrownSlot(d, i, fail || c.gain > 0 || done, fail ? 'Reset' : done ? 'Done' : signed(c.gain))
+    const said = fail ? 'ends the attempt' : done ? 'completes the step' : c.gain > 0 ? signed(c.gain) : 'no progress'
+    return { ...slot, aria: `Dart ${i + 1}: ${slot.label}, ${said}`, alert: fail }
+  })
+  return [...done, ...(o.locked ? notThrown(done.length) : openSlots(done.length, []))]
 }
 
 /** A visit that is over early: the slots from `from` on are not thrown, with no next dart. */

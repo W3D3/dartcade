@@ -108,7 +108,11 @@
           disabled={!onCorrect}
           aria-label="{slot.aria}. Correct this dart"
           class="{slotBox} cursor-pointer disabled:cursor-default
-                 {slot.kind === 'thrown' ? 'bg-accent text-accent-fg border-0' : 'bg-surface-chip text-text border border-line-key'}
+                 {slot.alert
+            ? 'bg-live-soft text-live-text border-0'
+            : slot.kind === 'thrown'
+              ? 'bg-accent text-accent-fg border-0'
+              : 'bg-surface-chip text-text border border-line-key'}
                  {openDart === i ? '[box-shadow:0_0_0_3px_var(--color-bg),0_0_0_5px_var(--color-accent)]' : ''}"
           class:fx-pop={popIndex === i}
         >

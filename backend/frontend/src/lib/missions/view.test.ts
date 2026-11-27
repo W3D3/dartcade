@@ -6,7 +6,6 @@ import {
   boardTarget,
   canReport,
   cardPills,
-  chipLabel,
   emptyLine,
   filterOf,
   fmtClock,
@@ -152,13 +151,7 @@ describe('the play screen', () => {
     expect(segments({ value: 40, of: 100 })).toBeNull()
   })
 
-  it('chips and the board target', () => {
-    expect([
-      chipLabel({ number: 20, multiplier: 1 }),
-      chipLabel({ number: 11, multiplier: 2 }),
-      chipLabel({ number: 50, multiplier: 1 }),
-    ]).toEqual(['S20', 'D11', 'Bull'])
-    expect(chipLabel({ number: 0, multiplier: 0 })).toBe('Miss')
+  it('the board target', () => {
     expect(boardTarget(mission.steps[1])).toBe(20)
     expect(boardTarget(mission.steps[2])).toBeNull()
   })

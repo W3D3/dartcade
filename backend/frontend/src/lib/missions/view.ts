@@ -1,7 +1,7 @@
 // What the Missions list and the Mission-Play screen show, as pure functions of the API's cards and
 // the snapshot's MissionGame (docs/superpowers/specs/2026-11-24-missions-design.md).
 import type { components } from '$lib/api/schema'
-import type { MissionChip, MissionGame, MissionRun, MissionStep } from '$lib/api/game-ws'
+import type { MissionGame, MissionRun, MissionStep } from '$lib/api/game-ws'
 import { plural } from '$lib/fmt'
 import { compareRuns } from '$shared/missions/highscores'
 import { elapsed } from '$shared/missions/run'
@@ -161,14 +161,6 @@ export function segments(progress: { value: number; of: number }): Segment[] | n
 
 /** The rule under the big number. */
 export const stepRule = (step: MissionStep): string => (streaky(step) ? 'A miss resets the streak to 0.' : stepDetail(step))
-
-/** A chip's label: "S20", "D11", "T20", "25", "Bull", "Miss". */
-export function chipLabel(c: Pick<MissionChip, 'number' | 'multiplier'>): string {
-  if (c.number === 0) return 'Miss'
-  if (c.number === 50 || (c.number === 25 && c.multiplier === 2)) return 'Bull'
-  if (c.number === 25) return '25'
-  return `${['', 'S', 'D', 'T'][c.multiplier] ?? ''}${c.number}`
-}
 
 /** "+1", "0", "−40". */
 export const signed = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0')

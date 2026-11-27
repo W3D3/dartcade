@@ -16,13 +16,14 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import TurnStatusBar from '$lib/components/TurnStatusBar.svelte'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
+  import DartSlots from '$lib/components/DartSlots.svelte'
+  import { missionSlots } from '$lib/dartSlots'
   import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import type { MatchControls } from '$lib/components/match/types'
   import type { Who } from '$lib/face'
   import {
     bestValue,
     boardTarget,
-    chipLabel,
     CLOCK_RETRY_MS,
     CLOCK_WARN_MS,
     fmtClock,
@@ -103,6 +104,7 @@
 
   const visitGain = $derived(game.chips.reduce((sum, c) => sum + c.gain, 0))
   const darts = $derived(game.currentVisitDarts)
+  const slots = $derived(missionSlots({ darts, chips: game.chips, locked: game.visitLocked }))
   let openDart = $state<number | null>(null)
   let confirmGiveUp = $state(false)
   const others = $derived(game.runs.map((_, i) => i).filter(i => i !== cp))
@@ -139,40 +141,6 @@
       class="font-display font-bold normal-case tabular-nums tracking-title {size === 'sm' ? 'text-label' : 'text-lead'}">{clockText}</span
     ></span
   >
-{/snippet}
-
-{#snippet chips(tall: boolean)}
-  <div class="grid shrink-0 grid-cols-3 gap-2" aria-label="This visit's darts">
-    {#each [0, 1, 2] as k (k)}
-      {@const c = game.chips[k]}
-      {#if c}
-        <span
-          role="img"
-          aria-label="Dart {k + 1}: {chipLabel(c)}, {c.outcome === 'fail' ? 'ends the attempt' : c.gain > 0 ? `+${c.gain}` : 'no progress'}"
-          class="flex flex-col items-center justify-center gap-0.5 rounded-xl {tall ? 'h-[clamp(58px,10vh,124px)]' : 'h-[58px]'}
-            {c.outcome === 'fail'
-            ? 'bg-live-soft text-live-text'
-            : c.gain > 0 || c.outcome === 'done'
-              ? 'bg-accent text-accent-fg'
-              : 'bg-surface-chip text-ink-2'}"
-        >
-          <span class="font-display font-bold leading-none {tall ? 'text-[clamp(26px,5vh,56px)]' : 'text-section-title'}"
-            >{chipLabel(c)}</span
-          >
-          <span class="font-display font-bold {tall ? 'text-[clamp(14px,2.6vh,26px)]' : 'text-caption'}"
-            >{c.outcome === 'fail' ? 'Reset' : c.outcome === 'done' ? 'Done' : signed(c.gain)}</span
-          >
-        </span>
-      {:else}
-        <span
-          class="flex items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-line-next text-label text-ink-2 {tall
-            ? 'h-[clamp(58px,10vh,124px)]'
-            : 'h-[58px]'}"
-          >{#if k === game.chips.length && playing}<span class="size-2 rounded-full bg-accent"></span>{/if}Dart {k + 1}</span
-        >
-      {/if}
-    {/each}
-  </div>
 {/snippet}
 
 {#snippet thisVisit(tall: boolean)}
@@ -367,7 +335,7 @@
   {@render otherRows()}
   {@render board()}
   {@render thisVisit(false)}
-  {@render chips(false)}
+  <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
   {@render controls(phone)}
   <div class="flex shrink-0 justify-end">{@render giveUp()}</div>
 {/snippet}
@@ -389,7 +357,7 @@
     {@render pauseNote()}
     {@render board()}
     {@render thisVisit(true)}
-    {@render chips(true)}
+    <DartSlots {slots} {onCorrect} bind:openDart />
     {@render controls(false)}
   </div>
   {@render missionPanel()}
