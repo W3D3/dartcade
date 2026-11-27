@@ -63,7 +63,7 @@ of 9"); floor 9 is the boss. Acts beyond the first are out of scope.
    difficulty (easy, medium, hard, expert; the lobby may suggest one with the auto rule in the
    catalogue). The game starts on the map at floor 1.
 2. Map: the party votes for a node on the next floor (see [The map](#the-map)).
-3. The node plays out: fight, elite, boss, shop, treasure or rest.
+3. The node plays out: fight, elite, boss, shop, treasure, rest or event.
 4. After a fight, rewards (see [Rewards](#rewards)), then the map again.
 5. The run ends when the boss dies (victory) or every hero is at 0 HP (defeat).
 
@@ -77,7 +77,7 @@ Tile, Healer and Bullseye Idol.
 - Every node has up to two ways up: one on the left and one on the right. A floor therefore offers at
   most two nodes, left and right, to the party standing on the floor below. Edges only go from floor
   n to floor n + 1.
-- Node types: fight, elite, shop, treasure, rest, boss. The boss is on floor 9 and nowhere else. The
+- Node types: fight, elite, shop, treasure, rest, event, boss. The boss is on floor 9 and nowhere else. The
   generator must never put two elites or two shops next to each other in a row; beyond that, the mix
   is a balance matter (see [Proposed defaults](#proposed-defaults)).
 - The map screen shows the nodes of the party's current floor and what lies beyond, the party's HP,
@@ -227,6 +227,21 @@ value after Chill but before block.
 Neither node has an enemy, so neither has a target, intents or a damage popup. A rest still shows
 each hero's visit and a heal animation on the HP bar.
 
+### Event rooms (decided 2026-11-27)
+
+An event is a text box with 2 to 4 decisions that the players vote on, like the map vote: each
+player votes once, most votes win, a tie is decided at random by the game's `rng`. The chosen
+decision applies its outcome (gold, HP, an artifact, a curse, nothing) and the party returns to the
+map. There is no enemy, so no target, intents or damage popup.
+
+**No events are designed yet.** The content (texts, decisions, outcomes) is TBD. Build the room
+generically: an event is data (`id`, text, decisions, each with a label and a list of outcomes drawn
+from the effects the game already has), kept in `shared/dungeon/events.ts`, so events can be added
+without code changes. Ship with one or two placeholder events clearly named as such, and give the
+map generator an event weight of its own so it can be zero. How a vote is cast (a dart at a half or
+a region of the board, or a tap on the screen) is the same open detail as the map vote, see
+[Proposed defaults](#proposed-defaults).
+
 ### Rewards
 
 The design does not define fight rewards. Proposed (see [Proposed defaults](#proposed-defaults)): a
@@ -251,7 +266,7 @@ A normal game module, as in the missions and the other multiplayer modes.
   replays to the same state. Bump `version` when a rule change would alter a replay.
 - **Config** (`configMeta`): difficulty, and per seat the class and the Healer's segment. Players
   come from the lobby.
-- **Phases** in the state: `setup`, `map`, `battle`, `shop`, `treasure`, `rest`, `reward`, `ended`.
+- **Phases** in the state: `setup`, `map`, `battle`, `shop`, `treasure`, `rest`, `event`, `reward`, `ended`.
 - **Inputs** the reducer understands: board darts (`onBoardEvent`) and manual darts, as in every
   mode; user actions for what is not a dart: `dungeon_pick_class`, `dungeon_place_item`,
   `dungeon_buy`, `dungeon_choose_reward` (also the treasure pick), `dungeon_leave_shop`. Which of these can also be done by a
@@ -318,8 +333,10 @@ entry, setup form, details page sections, match screen from `MatchFrame` and `Bo
 ## Missing mockups
 
 The canvas has no screen yet for the **treasure** node (three artifact cards per player, pick one),
-the **rest** node (each hero's visit and heal), the **shop**, class selection, the reward pick after
-a fight, and the victory and defeat screens. Build them from the same style (smooth UI, pixel
+the **rest** node (each hero's visit and heal), the **event** node (a text box and the decisions
+to vote on), the **shop**, party select (class pick), the boss intro, the reward pick after a fight,
+victory, defeat and the run summary. Party select, boss intro, victory, defeat, run summary, treasure,
+rest and event mockups have been requested; the shop and reward pick have not. Build them from the same style (smooth UI, pixel
 sprites, rarity outlines, artifact hover or tap popups) and ask for a mockup if a layout decision
 matters.
 
