@@ -267,3 +267,54 @@ test('the play screen with three players', async ({ browser }) => {
   await leaveLobby(page)
   await ctx.close()
 })
+
+// Its own mission, so the scene doesn't depend on the official ones
+const STREAK = {
+  name: 'Twenty streak',
+  description: 'Three twenties in a row, then 60 in a visit.',
+  difficulty: 'easy',
+  order: 'in_order',
+  onFail: 'retry',
+  pause: true,
+  rankBy: 'time',
+  steps: [
+    { type: 'hit', targets: ['S20'], hits: 3, inARow: true, order: 'any' },
+    { type: 'visits', visits: 1, points: 60, compare: 'at_least', inARow: false },
+  ],
+}
+
+for (const [size, view] of [
+  ['desktop', VIEW.wide],
+  ['phone', VIEW.phone],
+] as const) {
+  test(`correcting a dart, ${size}`, async ({ browser }) => {
+    // The darts go in by hand on a wide screen (the phone's header has no Enter toggle)
+    const wide = await open(browser, 'admin', VIEW.wide)
+    await endActiveGames(wide.page)
+    await leaveLobby(wide.page)
+    const { id } = (await api(wide.page).post('/api/missions', { mission: STREAK, visibility: 'private' })) as { id: string }
+    const { sessionId } = (await api(wide.page).post(`/api/missions/${id}/start`, {})) as { sessionId: string }
+    await openHash(wide.page, `/session/${sessionId}`)
+    // The board read the second twenty as a 1: the streak is reset
+    await visits(wide.page, ['S20', 'S1'])
+    await entryMode(wide.page, 'Board')
+    await wide.ctx.close()
+    const { ctx, page } = await open(browser, 'admin', view)
+    await openHash(page, `/session/${sessionId}`)
+    const slot = page.getByRole('button', { name: /^Dart 2: .*Correct this dart/ })
+    await expect(slot).toContainText('Reset')
+    await slot.click()
+    const popover = page.getByRole('dialog', { name: 'Correct dart 2' })
+    await expect(popover).toBeVisible()
+    await shot(page, `missions/correct-${size}.png`)
+    await popover.getByRole('button', { name: /^S20/ }).click()
+    // As if the twenty had been read: the streak stands at 2 of 3
+    await expect(page.getByRole('button', { name: /^Dart 2: .*Correct this dart/ })).toContainText('+1')
+    await expect(page.getByRole('region', { name: /step 1: 2 of 3/ })).toBeVisible()
+    await shot(page, `missions/corrected-${size}.png`)
+    // endActiveGames ends a game with its End button; a mission has Give up
+    await page.getByRole('button', { name: 'Give up' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'Give up' }).click()
+    await ctx.close()
+  })
+}
