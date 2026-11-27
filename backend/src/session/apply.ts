@@ -26,6 +26,21 @@ type DartEvent = Extract<BoardEvent, { kind: 'dart.detected' }>
 const isDart = (e: BoardEvent): e is DartEvent => e.kind === 'dart.detected'
 const dartEvents = (session: Session): DartEvent[] => session.openVisitEvents.filter(isDart)
 
+// The state after `events` of the open visit, each dart at the time it was thrown
+const refoldOpen = (session: Session, events = session.openVisitEvents): unknown =>
+  refoldVisit(
+    session.module,
+    session.committedState,
+    events,
+    session.openDarts.map(d => d.thrownAt.getTime()),
+  )
+
+/** A correction changes darts already thrown: no time passes for the game (see GameModule.onClock). */
+const corrects = (input: GameInput): boolean =>
+  input.source === 'board'
+    ? input.event.kind === 'dart.corrected'
+    : input.source === 'user' && (input.action.type === 'correct_dart' || input.action.type === 'undo_dart')
+
 /** Darts and visits of a bull off (see withBullOff) don't count towards game stats. */
 export function inBullOff(session: Session, state: unknown): boolean {
   const view = session.module.view(state, session.players)
@@ -94,20 +109,21 @@ export function applyInput(session: Session, input: GameInput, at: Date): ApplyO
   const up = session.module.getCurrentPlayer(session.currentState)
   const bullOffBefore = session.clock !== null && inBullOff(session, session.currentState)
   const decidedBefore = bullOffBefore && bullOffDecided(session, session.currentState)
-  const outcome = timeRanOut(session, at)
-    ? endNow(session)
-    : input.source === 'board'
-      ? applyBoardEvent(session, input.event, at)
-      : input.source === 'user'
-        ? applyUserAction(session, input.action, at)
-        : forfeit(session, input.action.seats)
+  const outcome =
+    !corrects(input) && timeRanOut(session, at)
+      ? endNow(session)
+      : input.source === 'board'
+        ? applyBoardEvent(session, input.event, at)
+        : input.source === 'user'
+          ? applyUserAction(session, input.action, at)
+          : forfeit(session, input.action.seats)
   // A game visit spends the time it ran over on its team's reserve. A bull off visit doesn't: the
   // wait for the board and the opponent isn't theirs to pay for, it only starts the next window.
   if (session.clock && outcome.committed) {
     if (outcome.committed.phase === 'game') chargeVisit(session.clock, teamOf(session)[up], at)
     else restartVisit(session.clock, at)
   }
-  session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+  session.currentState = refoldOpen(session)
   // The bull off ended: the first game visit's window starts now, not at the last throw
   if (session.clock && bullOffBefore && !inBullOff(session, session.currentState)) restartVisit(session.clock, at)
   // A throw again after a tie: the next thrower's window starts when it's called for
@@ -223,7 +239,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
         ]
         session.openDarts = Array.from({ length: DARTS_PER_VISIT }, () => ({ source: 'manual' as const, corrected: false, thrownAt: at }))
         countDarts(session, session.currentState, DARTS_PER_VISIT)
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+        session.currentState = refoldOpen(session)
       }
       if (session.openVisitEvents.length === 0) return NONE
       session.dartsLeftOnBoard = true
@@ -241,7 +257,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
         session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } })
       }
       // Use the state after the (possibly new) visit.opened to find the thrower
-      countDarts(session, refoldVisit(session.module, session.committedState, session.openVisitEvents), 1)
+      countDarts(session, refoldOpen(session), 1)
       session.openVisitEvents.push({
         kind: 'dart.detected',
         data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 },
@@ -277,7 +293,7 @@ function timeRanOut(session: Session, at: Date): boolean {
   const mod = session.module
   if (!mod.onClock || hasWinner(session, session.currentState)) return false
   session.committedState = mod.onClock(session.committedState, at.getTime(), session.currentState)
-  session.currentState = refoldVisit(mod, session.committedState, session.openVisitEvents)
+  session.currentState = refoldOpen(session)
   return hasWinner(session, session.currentState)
 }
 
@@ -302,8 +318,8 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
   const mod = session.module
   const events = session.openVisitEvents
   const lead = events.slice(0, events[0]?.kind === 'visit.opened' ? 1 : 0)
-  const start = refoldVisit(mod, session.committedState, lead)
-  const end = refoldVisit(mod, session.committedState, events)
+  const start = refoldOpen(session, lead)
+  const end = refoldOpen(session)
   const after = mod.onBoardEvent(end, closing).state
 
   if (!inBullOff(session, end)) {

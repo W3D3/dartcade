@@ -120,11 +120,14 @@ export const missionModule: GameModule<MissionState, MissionConfig, MissionView,
 
   getCurrentPlayer: (s: MissionState) => s.currentPlayer,
 
-  // The open visit's deciding dart stopped the player's clock: only the turn's time moves on
-  onClock: (s: MissionState, now: number, current: MissionState): MissionState =>
-    playing(current.runs[current.currentPlayer])
-      ? { ...withRun(s, tick(s.cfg.mission, s.runs[s.currentPlayer], now)), now }
-      : { ...s, now },
+  // The open visit's deciding dart stopped the player's clock: only the turn's time moves on. A dart
+  // folded again (a correction) is timed when it was thrown: the turn's time never goes back
+  onClock: (s: MissionState, now: number, current: MissionState): MissionState => {
+    const turnTime = Math.max(s.now ?? now, now)
+    return playing(current.runs[current.currentPlayer])
+      ? { ...withRun(s, tick(s.cfg.mission, s.runs[s.currentPlayer], now)), now: turnTime }
+      : { ...s, now: turnTime }
+  },
 
   onBoardEvent(s: MissionState, e: BoardEvent): { state: MissionState } {
     if (finished(s)) return { state: s }

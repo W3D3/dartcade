@@ -214,3 +214,141 @@ describe('mission game, players taking turns', () => {
     expect(again.committedState).toEqual(s.committedState)
   })
 })
+
+describe('mission game, corrections', () => {
+  type Timed = [seconds: number, action: UserAction]
+
+  function timeline(s: Session, steps: Timed[]): LoggedInput[] {
+    return steps.map(([sec, action], seq) => {
+      const at = new Date(sec * 1000)
+      applyInput(s, { source: 'user', action }, at)
+      return { seq, source: 'user', kind: action.type, data: action, created_at: at }
+    })
+  }
+  // Darts one second apart from 1 s
+  const darts = (labels: string): Timed[] => labels.split(' ').map((l, i) => [i + 1, add(l)])
+  const fix = (sec: number, visitIndex: number, label: string): Timed => {
+    const { segment } = add(label) as Extract<UserAction, { type: 'add_dart' }>
+    return [sec, { type: 'correct_dart', visitIndex, segment }]
+  }
+  const takeout = (sec: number): Timed => [sec, { type: 'takeout' }]
+
+  /** A visit with a wrong dart corrected at 4 s ends exactly like one where the right dart was thrown. */
+  function sameAsThrown(m: Mission, wrong: string, at: number, right: string): Session {
+    const corrected = start(m)
+    const labels = wrong.split(' ')
+    timeline(corrected, [...darts(wrong), fix(4, at, right), takeout(5)])
+    const thrown = start(m)
+    timeline(thrown, [...darts(labels.map((l, i) => (i === at ? right : l)).join(' ')), takeout(5)])
+    expect(corrected.committedState).toEqual(thrown.committedState)
+    expect(view(corrected)).toEqual(view(thrown))
+    return corrected
+  }
+
+  const one = (step: Mission['steps'][number], o: Partial<Mission> = {}) => mission({ steps: [step], ...o })
+
+  it.each<[string, Mission, string, number, string, 'completed' | 'playing']>([
+    [
+      'hit, a streak a wrong miss had reset',
+      one({ type: 'hit', targets: ['S20'], hits: 3, inARow: true, order: 'any' }),
+      'S20 S1 S20',
+      1,
+      'S20',
+      'completed',
+    ],
+    [
+      'hit in order',
+      one({ type: 'hit', targets: ['S1', 'S2', 'S3'], hits: 1, inARow: false, order: 'in_order' }),
+      'S1 S5 S3',
+      1,
+      'S2',
+      'completed',
+    ],
+    [
+      'hit, a completing dart corrected away',
+      one({ type: 'hit', targets: ['S20'], hits: 1, inARow: false, order: 'any' }),
+      'S20',
+      0,
+      'S1',
+      'playing',
+    ],
+    ['marks', one({ type: 'marks', targets: [20], marks: 6, per: 'total', within: 3 }), 'T20 S20 T19', 2, 'T20', 'completed'],
+    [
+      'a visit of 60',
+      one({ type: 'visits', visits: 1, points: 60, compare: 'at_least', inARow: false }),
+      'S20 S20 S1',
+      2,
+      'S20',
+      'completed',
+    ],
+    ['score', one({ type: 'score', points: 100, within: 3 }), 'S20 T20 S1', 2, 'T20', 'completed'],
+    ['a checkout bust undone', one({ type: 'checkout', start: 40, maxDarts: 3, finish: 'double' }), 'S20 S19', 1, 'D10', 'completed'],
+    ['a fast leg', one({ type: 'leg', start: 301, within: 30, finish: 'double' }), 'T20 S1 T20', 1, 'T20', 'playing'],
+    ['an average', one({ type: 'average', visits: 1, average: 140 }), 'T20 S1 S20', 1, 'T20', 'completed'],
+  ])('%s: corrected is as thrown', (_, m, wrong, at, right, status) => {
+    expect(view(sameAsThrown(m, wrong, at, right)).runs[0].status).toBe(status)
+  })
+
+  it('a failed attempt is un-failed: the attempts and the Start over count go back', () => {
+    const m = mission({ onFail: 'restart' })
+    const v = view(sameAsThrown(m, 'S20 S1 S20', 1, 'S20'))
+    expect(v.runs[0]).toMatchObject({ restarts: 0, active: 1 })
+    expect(v.runs[0].steps[0].attempts).toBe(1)
+  })
+
+  it('a corrected dart is timed when it was thrown, not when it was corrected', () => {
+    const s = start(oneStep())
+    timeline(s, [...darts('S1 S1'), fix(30, 1, 'S20'), takeout(31)])
+    // The clock starts with the first dart (1 s); the corrected dart was thrown at 2 s
+    expect(view(s).runs[0]).toMatchObject({ status: 'completed', timeMs: 1000 })
+  })
+
+  it('a correction after the time limit counts a dart thrown in time', () => {
+    const m = oneStep({ timeLimit: 60 })
+    const corrected = start(m)
+    timeline(corrected, [...darts('S1 S1'), fix(70, 1, 'S20'), takeout(71)])
+    expect(view(corrected).runs[0]).toMatchObject({ status: 'completed', timeMs: 1000 })
+    // Left wrong, the takeout after the limit ends it
+    const wrong = start(m)
+    timeline(wrong, [...darts('S1 S1'), takeout(71)])
+    expect(view(wrong).runs[0]).toMatchObject({ status: 'failed', failure: 'time' })
+  })
+
+  it('undo takes a dart back as if it was never thrown', () => {
+    const undone = start(oneStep())
+    timeline(undone, [...darts('S1 S5'), [3, { type: 'undo_dart' }], [4, add('S20')], takeout(5)])
+    const thrown = start(oneStep())
+    timeline(thrown, [[1, add('S1')], [4, add('S20')], takeout(5)])
+    expect(undone.committedState).toEqual(thrown.committedState)
+  })
+
+  it("with turns, a correction changes only the thrower's run and clock", () => {
+    const m = mission()
+    const corrected = start(m, 2)
+    const thrown = start(m, 2)
+    const first: Timed[] = [...darts('S20 S20 S1'), takeout(4)]
+    timeline(corrected, [...first, [5, add('S1')], [6, add('S1')], fix(7, 0, 'S20'), fix(8, 1, 'S20'), takeout(9)])
+    timeline(thrown, [...first, [5, add('S20')], [6, add('S20')], takeout(9)])
+    expect(corrected.committedState).toEqual(thrown.committedState)
+    // Bob's clock started at Ann's takeout (4 s); his corrected second dart was thrown at 6 s
+    expect(view(corrected).runs[1].steps[0].doneAt).toBe(2000)
+  })
+
+  it('a replay of the log with corrections gives the same state (a restart)', () => {
+    const m = mission({ timeLimit: 60 })
+    const s = start(m)
+    const rows = timeline(s, [...darts('S20 S1 S20'), fix(9, 1, 'S20'), takeout(10), [11, add('T20')], fix(12, 0, 'T19'), takeout(13)])
+    const again = start(m)
+    replay(again, rows, () => undefined)
+    expect(again.committedState).toEqual(s.committedState)
+  })
+
+  it('a finished game takes no correction', () => {
+    const s = start(oneStep())
+    timeline(s, [[1, add('S20')], takeout(2)])
+    const done = structuredClone(s.committedState)
+    timeline(s, [fix(3, 0, 'S1')])
+    expect(s.committedState).toEqual(done)
+    expect(view(s).runs[0].status).toBe('completed')
+  })
+})
