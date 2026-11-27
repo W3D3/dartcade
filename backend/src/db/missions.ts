@@ -97,6 +97,8 @@ export type MissionCard = MissionRow & {
   yourBest: Best | null
   /** The best of the viewer's friends. */
   friendsBest: Best | null
+  /** The viewer's finished games of it (completed, failed, out of time or given up), test runs left out. */
+  tries: number
 }
 
 const LIST_LIMIT = 100
@@ -129,16 +131,29 @@ export async function listMissions(
 /** Each card's best of the viewer and of the viewer's friends. */
 async function withBests(db: Kysely<Database>, v: MissionViewer, missions: (MissionRow & { plays: number })[]): Promise<MissionCard[]> {
   if (missions.length === 0) return []
-  const bests = await bestsOf(
-    db,
-    missions.map(m => m.id),
-    [v.id, ...v.friendIds],
-  )
+  const ids = missions.map(m => m.id)
+  const [bests, tries] = await Promise.all([bestsOf(db, ids, [v.id, ...v.friendIds]), triesOf(db, ids, v.id)])
   return missions.map(m => {
     const mine = bests.filter(b => b.missionId === m.id)
     const friends = mine.filter(b => b.userId !== v.id).sort((a, b) => compareRuns(m.mission.rankBy, a, b))
-    return { ...m, yourBest: mine.find(b => b.userId === v.id) ?? null, friendsBest: friends[0] ?? null }
+    return { ...m, yourBest: mine.find(b => b.userId === v.id) ?? null, friendsBest: friends[0] ?? null, tries: tries.get(m.id) ?? 0 }
   })
+}
+
+// How often the user finished a game of each mission: the bests keep only completions
+async function triesOf(db: Kysely<Database>, missionIds: string[], userId: string): Promise<Map<string, number>> {
+  const found = await db
+    .selectFrom('game_sessions as g')
+    .innerJoin('game_players as p', 'p.session_id', 'g.id')
+    .select([sql<string>`g.config ->> 'missionId'`.as('missionId'), sql<number>`count(DISTINCT g.id)::int`.as('n')])
+    .where('g.game_id', '=', 'mission')
+    .where('g.status', '=', 'finished')
+    .where(sql<boolean>`g.config ->> 'test' = 'false'`)
+    .where(sql<boolean>`g.config ->> 'missionId' = ANY(${missionIds}::text[])`)
+    .where('p.user_id', '=', userId)
+    .groupBy(sql`g.config ->> 'missionId'`)
+    .execute()
+  return new Map(found.map(r => [r.missionId, r.n]))
 }
 
 async function bestsOf(db: Kysely<Database>, missionIds: string[], userIds: string[]): Promise<(Best & { missionId: string })[]> {

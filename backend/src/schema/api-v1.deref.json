@@ -74842,6 +74842,7 @@
                           "plays",
                           "yourBest",
                           "friendsBest",
+                          "tries",
                           "hidden",
                           "canEdit",
                           "createdAt",
@@ -75336,6 +75337,11 @@
                                 ]
                               }
                             ]
+                          },
+                          "tries": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "The viewer's finished games of it (completed or not), test runs left out"
                           },
                           "hidden": {
                             "type": "object",
@@ -75871,6 +75877,7 @@
                     "plays",
                     "yourBest",
                     "friendsBest",
+                    "tries",
                     "hidden",
                     "canEdit",
                     "createdAt",
@@ -76365,6 +76372,11 @@
                           ]
                         }
                       ]
+                    },
+                    "tries": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The viewer's finished games of it (completed or not), test runs left out"
                     },
                     "hidden": {
                       "type": "object",
@@ -76672,6 +76684,7 @@
                     "plays",
                     "yourBest",
                     "friendsBest",
+                    "tries",
                     "hidden",
                     "canEdit",
                     "createdAt",
@@ -77166,6 +77179,11 @@
                           ]
                         }
                       ]
+                    },
+                    "tries": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The viewer's finished games of it (completed or not), test runs left out"
                     },
                     "hidden": {
                       "type": "object",
@@ -77698,6 +77716,7 @@
                     "plays",
                     "yourBest",
                     "friendsBest",
+                    "tries",
                     "hidden",
                     "canEdit",
                     "createdAt",
@@ -78192,6 +78211,11 @@
                           ]
                         }
                       ]
+                    },
+                    "tries": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The viewer's finished games of it (completed or not), test runs left out"
                     },
                     "hidden": {
                       "type": "object",
@@ -79292,6 +79316,7 @@
                               "plays",
                               "yourBest",
                               "friendsBest",
+                              "tries",
                               "hidden",
                               "canEdit",
                               "createdAt",
@@ -79787,6 +79812,11 @@
                                   }
                                 ]
                               },
+                              "tries": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "The viewer's finished games of it (completed or not), test runs left out"
+                              },
                               "hidden": {
                                 "type": "object",
                                 "nullable": true,
@@ -79862,6 +79892,7 @@
                           "plays",
                           "yourBest",
                           "friendsBest",
+                          "tries",
                           "hidden",
                           "canEdit",
                           "createdAt",
@@ -80356,6 +80387,11 @@
                                 ]
                               }
                             ]
+                          },
+                          "tries": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "The viewer's finished games of it (completed or not), test runs left out"
                           },
                           "hidden": {
                             "type": "object",
@@ -121907,6 +121943,7 @@
           "plays",
           "yourBest",
           "friendsBest",
+          "tries",
           "hidden",
           "canEdit",
           "createdAt",
@@ -122402,6 +122439,11 @@
               }
             ]
           },
+          "tries": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The viewer's finished games of it (completed or not), test runs left out"
+          },
           "hidden": {
             "type": "object",
             "nullable": true,
@@ -122455,6 +122497,7 @@
                 "plays",
                 "yourBest",
                 "friendsBest",
+                "tries",
                 "hidden",
                 "canEdit",
                 "createdAt",
@@ -122949,6 +122992,11 @@
                       ]
                     }
                   ]
+                },
+                "tries": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The viewer's finished games of it (completed or not), test runs left out"
                 },
                 "hidden": {
                   "type": "object",
@@ -123481,6 +123529,7 @@
                     "plays",
                     "yourBest",
                     "friendsBest",
+                    "tries",
                     "hidden",
                     "canEdit",
                     "createdAt",
@@ -123976,6 +124025,11 @@
                         }
                       ]
                     },
+                    "tries": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The viewer's finished games of it (completed or not), test runs left out"
+                    },
                     "hidden": {
                       "type": "object",
                       "nullable": true,
@@ -124051,6 +124105,7 @@
                 "plays",
                 "yourBest",
                 "friendsBest",
+                "tries",
                 "hidden",
                 "canEdit",
                 "createdAt",
@@ -124545,6 +124600,11 @@
                       ]
                     }
                   ]
+                },
+                "tries": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The viewer's finished games of it (completed or not), test runs left out"
                 },
                 "hidden": {
                   "type": "object",

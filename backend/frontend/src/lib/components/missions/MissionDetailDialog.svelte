@@ -58,7 +58,7 @@
   <div class="grid grid-cols-2 gap-3 border-t border-surface-paused pt-3">
     <span class="flex flex-col"
       ><span class="text-caption text-text-muted">Your best</span><span class="font-display text-player-name font-bold">{best.yours}</span
-      ></span
+      >{#if best.tried}<span class="text-caption text-text-muted">{best.tried}</span>{/if}</span
     >
     <span class="flex flex-col"
       ><span class="text-caption text-text-muted">Friends’ best</span><span class="font-display text-player-name font-bold"

@@ -7445,6 +7445,8 @@ export interface components {
             plays: number;
             yourBest: components["schemas"]["MissionBest"] | (null);
             friendsBest: components["schemas"]["MissionBest"] | (null);
+            /** @description The viewer's finished games of it (completed or not), test runs left out */
+            tries: number;
             /** @description A moderator hid it (shown to its author and moderators only) */
             hidden: {
                 /** Format: date-time */

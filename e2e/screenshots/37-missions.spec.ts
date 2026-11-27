@@ -65,7 +65,8 @@ async function artboardCards(page: Page): Promise<Card[]> {
     },
     { ...by('Around the Clock Sprint'), yourBest: best(600_000, 38), friendsBest: best(540_000, 31) },
     { ...by('Shanghai Night'), ...author('u-tom', 'Tom'), id: 'm-shanghai', canEdit: false, yourBest: null, friendsBest: best(860_000) },
-  ]
+    // Ton Machine: tried twice, never completed
+  ].map(c => ({ ...c, tries: c.id === 'm-ton' ? 2 : 0 }))
 }
 
 async function mockList(page: Page, cards: Card[]): Promise<void> {
@@ -234,6 +235,7 @@ test('give up', async ({ browser }) => {
   await shot(page, 'missions/give-up-phone.png')
   await page.getByRole('dialog').getByRole('button', { name: 'Give up' }).click()
   await expect(page.getByRole('heading', { name: 'Gave up' })).toBeVisible()
+  await expect(page.getByText('Gave up at step 1 of')).toBeVisible()
   await shot(page, 'missions/result-gave-up-phone.png')
   await ctx.close()
 })

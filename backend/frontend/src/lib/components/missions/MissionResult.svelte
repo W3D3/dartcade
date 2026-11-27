@@ -16,7 +16,7 @@
   import { ordinal, plural } from '$lib/fmt'
   import type { Who } from '$lib/face'
   import { stepTitle } from '$shared/missions/describe'
-  import { fmtClock, highscoreRank, personalBest, resultRows } from '$lib/missions/view'
+  import { fmtClock, highscoreRank, outcomeLine, personalBest, resultRows } from '$lib/missions/view'
 
   type Action = { label: string; onclick: () => void }
   let {
@@ -74,6 +74,7 @@
           ? 'Gave up'
           : 'Mission over',
   )
+  const outcome = $derived(outcomeLine(game, run))
   const time = $derived(fmtClock(run.timeMs ?? 0))
   const newBest = $derived(own && viewerId !== null && personalBest(game, run, viewerId))
   const rank = $derived(highscoreRank(game, run))
@@ -92,6 +93,7 @@
     <h1 class="type-page-title font-bold leading-none md:text-glyph {run.status === 'completed' ? 'text-accent' : 'text-text'}">
       {headline}
     </h1>
+    {#if outcome}<p class="text-body text-text-muted">{outcome}</p>{/if}
     <div class="flex flex-wrap gap-2">
       {#if newBest}<span class="rounded-full bg-accent px-2.5 py-1 text-caption font-bold uppercase tracking-wide text-accent-fg"
           >New personal best</span
