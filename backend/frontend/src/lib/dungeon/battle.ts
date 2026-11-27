@@ -90,7 +90,7 @@ export function enemyTurnLines(
   const nameOf = (uid: string) => enemyName(enemies.find(e => e.uid === uid)?.kind ?? '')
   const attacks = log.attacks.map(a => {
     const hits = a.hits.map(h => `${names[h.seat] ?? `Hero ${h.seat + 1}`} takes ${h.damage}${h.blocked ? ` (${h.blocked} blocked)` : ''}`)
-    return `${nameOf(a.uid)} attacks: ${hits.length ? hits.join(', ') : 'nobody is hit'}.`
+    return `${nameOf(a.uid)} uses ${a.name}: ${hits.length ? hits.join(', ') : 'nobody is hit'}.`
   })
   const burns = log.burns.map(b => `${nameOf(b.uid)} burns for ${b.damage}.`)
   return [...attacks, ...burns]
@@ -120,9 +120,9 @@ export function itemSpot(number: number, k: number): { x: number; y: number } | 
   return { x: 0.88 * Math.cos(a), y: -0.88 * Math.sin(a) }
 }
 
-/** The last event, while no room has been cleared since (the map after it, or the boss walked into straight after). */
-export const freshEvent = (game: Pick<DungeonGame, 'lastEvent' | 'cleared'>): DungeonGame['lastEvent'] =>
-  game.lastEvent?.cleared === game.cleared ? game.lastEvent : null
+/** An event's outcome or a fight's gold while no room has been cleared since (the map after it, or the boss walked into straight after). */
+export const fresh = <T extends { cleared: number }>(news: T | null, game: Pick<DungeonGame, 'cleared'>): T | null =>
+  news?.cleared === game.cleared ? news : null
 
 /** What the last event did: the decision taken, the items placed, the artifacts found. */
 export function eventOutcomeLines(last: NonNullable<DungeonGame['lastEvent']>, names: readonly string[]): string[] {

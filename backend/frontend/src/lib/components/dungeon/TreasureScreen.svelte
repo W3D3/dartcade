@@ -18,20 +18,20 @@
   const offers = $derived(game.offers ?? [])
 </script>
 
-<main class="flex h-full flex-col gap-3 overflow-y-auto bg-bg p-3 text-text md:p-5" data-testid="dungeon-treasure">
-  <h2 class="font-display text-2xl font-bold uppercase text-gold">Treasure · floor {game.floor}</h2>
-  <p class="text-text-muted">Every hero takes one artifact.</p>
+<main class="flex h-full flex-col gap-3 overflow-y-auto bg-dg-bg p-3 text-dg-text md:p-5" data-testid="dungeon-treasure">
+  <h2 class="font-display text-2xl font-bold uppercase text-dg-gold">Treasure · floor {game.floor}</h2>
+  <p class="text-dg-muted">Every hero takes one artifact.</p>
   {#each offers as offer, seat (seat)}
     {#if offer}
       {@const mine = choosesFor(seat, { mySeats, host, viewOnly })}
-      <section class="flex flex-col gap-2 rounded-xl border border-line bg-surface-panel p-3" aria-label="{names[seat]}'s pick">
+      <section class="flex flex-col gap-2 rounded-xl border border-dg-line bg-dg-panel p-3" aria-label="{names[seat]}'s pick">
         <h3 class="font-display text-lg font-bold uppercase">{names[seat]}{mine ? ' picks' : ' is choosing…'}</h3>
         <div class="grid gap-2 md:grid-cols-3">
           {#each offer as id, index (id)}
             {@const a = isArtifactId(id) ? ARTIFACTS[id] : null}
-            <div class="flex flex-col gap-1 rounded-lg border border-line p-2" data-testid="offer">
+            <div class="flex flex-col gap-1 rounded-lg border border-dg-line p-2" data-testid="offer">
               <span class="font-display font-bold uppercase">{a?.name ?? id}</span>
-              <span class="text-xs uppercase text-text-muted">{a?.rarity} · {a?.trigger}</span>
+              <span class="text-xs uppercase text-dg-muted">{a?.rarity} · {a?.trigger}</span>
               <span class="text-sm">{a?.description}</span>
               {#if mine}
                 <Button class="mt-auto" variant="outline" onclick={() => send({ type: 'dungeon_choose_reward', seat, index })}>Take</Button>

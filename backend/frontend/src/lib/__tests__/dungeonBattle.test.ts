@@ -7,7 +7,7 @@ import RestScreen from '$lib/components/dungeon/RestScreen.svelte'
 import RunEndScreen from '$lib/components/dungeon/RunEndScreen.svelte'
 import TreasureScreen from '$lib/components/dungeon/TreasureScreen.svelte'
 import { dungeonSlots } from '$lib/dartSlots'
-import { choosesFor, enemyTurnLines, eventOutcomeLines, freshEvent, litPath, traceLines } from '$lib/dungeon/battle'
+import { choosesFor, enemyTurnLines, eventOutcomeLines, fresh, litPath, traceLines } from '$lib/dungeon/battle'
 import { resolveVisit } from '$shared/dungeon/resolve'
 import type { Segment } from '$lib/api'
 import type { Enemy, Hero } from '$shared/dungeon/state'
@@ -27,7 +27,7 @@ const slime: Enemy = { uid: 'e0', kind: 'slime', hp: 40, maxHp: 40, burn: 0, chi
 const skeleton: Enemy = { uid: 'e1', kind: 'skeleton', hp: 30, maxHp: 30, burn: 0, chilled: false }
 const view = (e: Enemy): DungeonEnemy => ({
   ...e,
-  intent: { kind: 'attack', value: 6, pierce: false },
+  intent: { kind: 'attack', name: 'Slime Slam', value: 6, pierce: false },
   weak: [{ ring: 'double' }],
   resist: [],
   immune: [{ number: 7 }],
@@ -61,9 +61,10 @@ const game = (over: Partial<DungeonGame> = {}): DungeonGame => ({
   difficulty: 'medium',
   floors: 9,
   floor: 2,
-  room: 'left',
+  room: 0,
+  path: [0],
   cleared: 1,
-  map: [],
+  map: { lanes: 1, floors: [] },
   votes: [null, null],
   currentPlayer: 0,
   nextPlayer: 1,
@@ -79,8 +80,8 @@ const game = (over: Partial<DungeonGame> = {}): DungeonGame => ({
   event: null,
   lastEvent: null,
   lastHeal: null,
-  damage: [0, 0],
-  bestVisit: [0, 0],
+  lastReward: null,
+  summary: null,
   currentVisitDarts: [],
   totalDarts: [0, 0],
   totalVisits: [0, 0],
@@ -116,6 +117,7 @@ describe('the battle log', () => {
       attacks: [
         {
           uid: 'e0',
+          name: 'Slime Slam',
           hits: [
             { seat: 0, blocked: 4, damage: 2 },
             { seat: 1, blocked: 0, damage: 6 },
@@ -125,7 +127,7 @@ describe('the battle log', () => {
       burns: [{ uid: 'e1', damage: 3 }],
     }
     expect(enemyTurnLines(log, names, [slime, skeleton])).toEqual([
-      'Slime attacks: Lena takes 2 (4 blocked), Max takes 6.',
+      'Slime uses Slime Slam: Lena takes 2 (4 blocked), Max takes 6.',
       'Skeleton burns for 3.',
     ])
   })
@@ -142,8 +144,8 @@ describe('the battle log', () => {
 describe('the last event', () => {
   it('is news until the party clears another room', () => {
     const lastEvent = { id: 'placeholderShrine', decision: 0, cleared: 2, items: [], artifacts: [] }
-    expect(freshEvent({ lastEvent, cleared: 2 })).toBe(lastEvent)
-    expect(freshEvent({ lastEvent, cleared: 3 })).toBeNull()
+    expect(fresh(lastEvent, { cleared: 2 })).toBe(lastEvent)
+    expect(fresh(lastEvent, { cleared: 3 })).toBeNull()
   })
 })
 
@@ -174,7 +176,7 @@ describe('BattleScreen', () => {
     }).body
     expect(out).toContain('Lena throws')
     expect(out).toContain('Round 2')
-    expect(out).toContain('Next: attacks 6')
+    expect(out).toContain('Next: Slime Slam · 6 damage')
     expect(out).toContain('Burn 4')
     expect(out).toContain('Chilled')
     expect(out).toContain('Weak: doubles · Immune: 7')
@@ -193,10 +195,10 @@ describe('BattleScreen', () => {
     expect(out).not.toContain('to kill')
   })
   it('marks the boss and shows the last enemy turn', () => {
-    const lastEnemyTurn = { attacks: [{ uid: 'e0', hits: [{ seat: 1, blocked: 0, damage: 9 }] }], burns: [] }
+    const lastEnemyTurn = { attacks: [{ uid: 'e0', name: 'Slime Slam', hits: [{ seat: 1, blocked: 0, damage: 9 }] }], burns: [] }
     const out = render(BattleScreen, { props: { ...fight(game({ battle: { ...game().battle!, room: 'boss', lastEnemyTurn } })) } }).body
     expect(out).toContain('Boss')
-    expect(out).toContain('Slime attacks: Max takes 9.')
+    expect(out).toContain('Slime uses Slime Slam: Max takes 9.')
   })
   it('hides Undo and Next on the big screen', () => {
     const out = render(BattleScreen, { props: { ...fight(game()), viewOnly: true } }).body
@@ -236,20 +238,18 @@ describe('room screens', () => {
     expect(watching).toContain('waiting for the party')
     expect(watching).not.toContain('>Vote<')
   })
-  it('victory waits for Finish, then links Back to Play and the summary', () => {
+  it('victory shows the deciding visit and waits for Finish', () => {
     const won = game({ phase: 'ended', outcome: 'victory', winner: 0, battle: null, trace: resolved.trace })
-    const props = { game: won, names, sessionId: 's1', ...controls, next: { label: 'Finish', prominent: true, enabled: true } }
-    const waiting = render(RunEndScreen, { props: { ...props, status: 'active' as const } }).body
-    expect(waiting).toContain('Victory')
-    expect(waiting).toContain('Finish')
-    expect(waiting).toContain('Lena throws S19')
-    const done = render(RunEndScreen, { props: { ...props, status: 'finished' as const } }).body
-    expect(done).toContain('href="#/play"')
-    expect(done).toContain('href="#/stats/history/s1"')
+    const finish = { ...controls, next: { label: 'Finish', prominent: true, enabled: true } }
+    const out = render(RunEndScreen, { props: { game: won, names, ...finish } }).body
+    expect(out).toContain('Victory')
+    expect(out).toContain('Finish')
+    expect(out).toContain('Lena throws S19')
+    expect(render(RunEndScreen, { props: { game: won, names, ...finish, viewOnly: true } }).body).not.toContain('Finish')
   })
   it('defeat says the party fell', () => {
     const out = render(RunEndScreen, {
-      props: { game: game({ phase: 'ended', outcome: 'defeat', battle: null }), names, sessionId: 's1', status: 'finished', ...controls },
+      props: { game: game({ phase: 'ended', outcome: 'defeat', battle: null }), names, ...controls },
     }).body
     expect(out).toContain('Defeat')
     expect(out).toContain('The party has fallen.')

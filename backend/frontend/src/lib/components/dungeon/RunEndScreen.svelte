@@ -21,7 +21,10 @@
   const log = $derived(won && game.trace ? traceLines(game.trace, names[game.trace.seat] ?? '', []) : [])
 </script>
 
-<main class="flex h-full flex-col items-center gap-4 overflow-y-auto bg-dg-bg p-4 text-center text-dg-text md:p-8" data-testid="dungeon-end">
+<main
+  class="flex h-full flex-col items-center gap-4 overflow-y-auto bg-dg-bg p-4 text-center text-dg-text md:p-8"
+  data-testid="dungeon-end"
+>
   <h2 class="font-display text-5xl font-bold uppercase {won ? 'text-dg-gold' : 'text-dg-hp'}">{won ? 'Victory' : 'Defeat'}</h2>
   <p class="text-lg">{won ? 'The Dungeon Warden falls.' : 'The party has fallen.'}</p>
   {#if log.length}
@@ -30,7 +33,9 @@
     </ol>
   {/if}
   {#if !viewOnly}
-    <div class="w-full max-w-md"><ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} /></div>
+    <div class="w-full max-w-md">
+      <ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    </div>
   {/if}
   {#if game.summary}
     <div class="w-full text-left"><RunSummary summary={game.summary} {names} darts={game.totalDarts} /></div>

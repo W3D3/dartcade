@@ -6,6 +6,7 @@
   import type { DungeonGame } from '$lib/api/game-ws'
   import type { MatchControls } from '$lib/components/match/types'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
+  import { eventOutcomeLines, fresh } from '$lib/dungeon/battle'
   import { ROOMS, SIDE_DART, voteOf, type VoteSide } from '$lib/dungeon/view'
   import { isClassId } from '$shared/dungeon/content/classes'
   import ArtifactsPanel from './ArtifactsPanel.svelte'
@@ -33,6 +34,9 @@
   const vote = $derived(voteOf(game))
   const canVote = $derived(!viewOnly && canThrow && !locked)
   const thrower = $derived(names[game.currentPlayer])
+  // What the room just left gave: a fight's gold, an event's outcome
+  const reward = $derived(fresh(game.lastReward, game))
+  const event = $derived(fresh(game.lastEvent, game))
   const cleared = $derived(game.floor === 0 ? 'Act 1 · The way in' : `Act 1 · Floor ${game.floor} cleared`)
   const voteFor = (side: VoteSide['side']) =>
     onDart({ name: `S${SIDE_DART[side]}`, number: SIDE_DART[side], bed: 'SingleOuter', multiplier: 1 })
@@ -86,6 +90,12 @@
   <section class="flex min-h-[420px] min-w-0 flex-1 flex-col gap-2 rounded-xl border border-dg-line bg-dg-panel p-3 md:p-4">
     <span class="font-display text-sm font-bold uppercase text-dg-muted">{cleared}</span>
     <h2 class="font-display text-2xl font-bold uppercase text-dg-gold md:text-3xl">Choose your path</h2>
+    {#if reward}<p class="text-dg-gold" data-testid="reward">+{reward.gold} gold from the fight</p>{/if}
+    {#if event}
+      <ul class="text-sm" data-testid="event-outcome">
+        {#each eventOutcomeLines(event, names) as line, i (i)}<li>{line}</li>{/each}
+      </ul>
+    {/if}
     <div class="min-h-0 flex-1 rounded-lg bg-dg-bg p-4 pl-6"><DungeonMap {game} /></div>
   </section>
 
