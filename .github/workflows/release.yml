@@ -79,6 +79,9 @@ jobs:
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: bridge/${{ matrix.name }}
+          # The action's default is draft: false, which would publish the release before its notes
+          # are written; keep the draft until `gh release edit --draft=false` (DEVELOPMENT.md)
+          draft: true
 
   # SHA256SUMS of the binaries, signed: a bridge updating itself verifies both before it runs the
   # new binary (bridge/internal/update, which embeds the public key, release.pub)

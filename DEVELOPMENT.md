@@ -476,6 +476,21 @@ openssl pkey -in bridge-signing-key.pem -pubout -out bridge/internal/update/rele
 gh secret set BRIDGE_SIGNING_KEY < bridge-signing-key.pem
 ```
 
+## Releasing
+
+The Release workflow only ever creates a **draft**: it writes the first notes from the merged PR
+titles (`cliff.toml`), attaches the bridge binaries, `SHA256SUMS` and its signature, builds the
+images, and stops. Drafts are invisible to the public API, so the bridge's update check and the
+Discord post see nothing until you publish.
+
+```bash
+git tag vX.Y.Z origin/main && git push origin vX.Y.Z   # starts the run
+gh run watch --exit-status                              # wait for it to go green
+gh release view vX.Y.Z --json isDraft,assets            # still a draft, all assets there
+gh release edit vX.Y.Z --notes-file notes.md            # rewrite the notes (AGENTS.md, Commits and merging)
+gh release edit vX.Y.Z --draft=false --latest           # publish: now bridges are offered the update
+```
+
 ## Production build
 
 ```bash
