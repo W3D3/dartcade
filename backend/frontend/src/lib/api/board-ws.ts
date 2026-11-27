@@ -737,6 +737,10 @@ export type DungeonGame = EngineGameFields & {
   lastEvent: {
     id: string
     decision: number
+    /**
+     * The run's rooms cleared once the event was over: its outcome is news while the run's cleared is the same.
+     */
+    cleared: number
     items: {
       number: number
       item: string

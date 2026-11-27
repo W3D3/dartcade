@@ -3801,7 +3801,7 @@
               "anyOf": [
                 {
                   "type": "object",
-                  "required": ["id", "decision", "items", "artifacts"],
+                  "required": ["id", "decision", "cleared", "items", "artifacts"],
                   "additionalProperties": false,
                   "properties": {
                     "id": {
@@ -3810,6 +3810,11 @@
                     "decision": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "cleared": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The run's rooms cleared once the event was over: its outcome is news while the run's cleared is the same."
                     },
                     "items": {
                       "type": "array",

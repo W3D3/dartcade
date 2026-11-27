@@ -230,7 +230,7 @@ describe('rooms', () => {
     s = voteEvent(s, 0, 1)
     s = voteEvent(s, 1, 1)
     s = voteEvent(s, 2, 0)
-    expect(s.lastEvent).toMatchObject({ id, decision: 1 })
+    expect(s.lastEvent).toMatchObject({ id, decision: 1, cleared: 2 })
     expect(s.cleared).toBe(2)
   })
 })

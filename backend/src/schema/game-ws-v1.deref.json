@@ -28094,6 +28094,7 @@
                               "required": [
                                 "id",
                                 "decision",
+                                "cleared",
                                 "items",
                                 "artifacts"
                               ],
@@ -28105,6 +28106,11 @@
                                 "decision": {
                                   "type": "integer",
                                   "minimum": 0
+                                },
+                                "cleared": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "description": "The run's rooms cleared once the event was over: its outcome is news while the run's cleared is the same."
                                 },
                                 "items": {
                                   "type": "array",
@@ -33770,6 +33776,7 @@
                   "required": [
                     "id",
                     "decision",
+                    "cleared",
                     "items",
                     "artifacts"
                   ],
@@ -33781,6 +33788,11 @@
                     "decision": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "cleared": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "The run's rooms cleared once the event was over: its outcome is news while the run's cleared is the same."
                     },
                     "items": {
                       "type": "array",
@@ -35803,6 +35815,7 @@
                           "required": [
                             "id",
                             "decision",
+                            "cleared",
                             "items",
                             "artifacts"
                           ],
@@ -35814,6 +35827,11 @@
                             "decision": {
                               "type": "integer",
                               "minimum": 0
+                            },
+                            "cleared": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "The run's rooms cleared once the event was over: its outcome is news while the run's cleared is the same."
                             },
                             "items": {
                               "type": "array",
