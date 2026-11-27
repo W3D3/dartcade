@@ -32,6 +32,7 @@ describe('enemyTurn', () => {
       [72, 0],
       [0, 0],
     ])
+    expect(r.log.attacks[0].name).toBe('Bone Slash')
     expect(r.log.attacks[0].hits).toEqual([
       { seat: 0, blocked: 5, damage: 3 },
       { seat: 1, blocked: 0, damage: 8 },
@@ -53,8 +54,8 @@ describe('enemyTurn', () => {
   })
 
   it('an every-other-round attacker rests on its off round', () => {
-    expect(intentOf(enemy('armoredKnight'), 1)).toEqual({ kind: 'none' })
-    expect(intentOf(enemy('armoredKnight'), 2)).toEqual({ kind: 'attack', value: 14 })
+    expect(intentOf(enemy('armoredKnight'), 1)).toEqual({ kind: 'none', name: 'Raise Shield' })
+    expect(intentOf(enemy('armoredKnight'), 2)).toEqual({ kind: 'attack', name: 'Heavy Swing', value: 14 })
     expect(enemyTurn([hero()], [enemy('armoredKnight')], 1, 'medium', DUNGEON_RULES).heroes[0].hp).toBe(80)
   })
 })

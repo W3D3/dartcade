@@ -220,7 +220,10 @@ describe('other games', () => {
         battle: o.hits
           ? {
               round: o.round ?? 2,
-              lastEnemyTurn: { attacks: [{ uid: 'e0', hits: o.hits.map((damage, seat) => ({ seat, blocked: 0, damage })) }], burns: [] },
+              lastEnemyTurn: {
+                attacks: [{ uid: 'e0', name: 'Bone Slash', hits: o.hits.map((damage, seat) => ({ seat, blocked: 0, damage })) }],
+                burns: [],
+              },
             }
           : null,
       })

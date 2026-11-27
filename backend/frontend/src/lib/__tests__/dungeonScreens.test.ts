@@ -39,6 +39,7 @@ const game = (over: Partial<DungeonGame> = {}): DungeonGame => ({
   event: null,
   lastEvent: null,
   lastHeal: null,
+  lastReward: null,
   summary: null,
   currentVisitDarts: [],
   totalDarts: [0, 0, 0],

@@ -86,6 +86,8 @@ export type RunState = {
   trace: Trace | null
   lastEvent: EventResult | null
   lastHeal: { seat: number; amount: number } | null
+  /** The gold the last won fight paid; `cleared` as in EventResult, so it is news until another room is cleared. */
+  lastReward: { gold: number; cleared: number } | null
   stats: SeatStats[]
   best: BestVisit | null
 }
@@ -135,6 +137,7 @@ export function startRun(cfg: DungeonConfig, seats: number, seed: number): RunSt
     trace: null,
     lastEvent: null,
     lastHeal: null,
+    lastReward: null,
     stats: perSeat(() => ({ damage: 0, bestVisit: 0, healed: 0, blocked: 0, bestDart: null, damageByFloor: [] })),
     best: null,
   }
@@ -351,7 +354,8 @@ function afterVisit(s: RunState, battle: Battle): RunState {
 function winFight(s: RunState, room: BattleRoom): RunState {
   if (room === 'boss') return { ...s, cleared: s.cleared + 1, scene: { phase: 'ended', outcome: 'victory' } }
   const pay = rulesOf(s.cfg).gold[room]
-  return finishRoom({ ...s, gold: s.gold + pay.base + pay.perFloor * s.floor })
+  const gold = pay.base + pay.perFloor * s.floor
+  return finishRoom({ ...s, gold: s.gold + gold, lastReward: { gold, cleared: s.cleared + 1 } })
 }
 
 /** A hero takes one artifact of their treasure offer. */
