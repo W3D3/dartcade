@@ -356,7 +356,7 @@ export async function buildApp({
         userId,
       ),
   })
-  await app.register(adminGamesApiPlugin, { db })
+  await app.register(adminGamesApiPlugin, { db, onPlayersChanged: ids => friends.averagesChanged(ids) })
   await app.register(adminRankedApiPlugin, { db, engine, matchmaking })
   // The lights flag changed: boards with strips are darkened (off) or get their devices back (on)
   const onFlagChanged = lights

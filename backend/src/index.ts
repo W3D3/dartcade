@@ -180,7 +180,7 @@ const engine: SessionEngine = new SessionEngine(
     })
     bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
     // Independent: a lobby that fails to reset must not keep the ratings from moving
-    const consumers: GameEndedConsumer[] = [lobbies, matchmaking, tournaments, missions]
+    const consumers: GameEndedConsumer[] = [lobbies, matchmaking, tournaments, missions, friends]
     return Promise.allSettled(consumers.map(c => c.onGameEnded(ended))).then(results => {
       for (const r of results)
         if (r.status === 'rejected') warn('game-end hook failed', { sessionId: ended.sessionId, error: String(r.reason) })

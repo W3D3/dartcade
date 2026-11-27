@@ -192,6 +192,12 @@ async function seatsAndRatedModes(trx: Kysely<Database>, id: string) {
   return { players, modes }
 }
 
+/** The accounts seated in a game, for whoever must refresh what it counted for (read before a delete: the seats go with it). */
+export async function playerIdsOf(db: Kysely<Database>, id: string): Promise<string[]> {
+  const rows = await db.selectFrom('game_players').select('user_id').where('session_id', '=', id).where('user_id', 'is not', null).execute()
+  return rows.map(r => r.user_id).filter((u): u is string => u !== null)
+}
+
 /**
  * Invalidates a finished game: it stays, but no longer counts in history, stats or best values, and
  * the ranked ratings of every mode it was rated in are replayed without it (recalculateRatings).

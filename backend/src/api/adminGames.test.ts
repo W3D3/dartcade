@@ -20,6 +20,7 @@ vi.mock('../db/adminGames.js', () => ({
   invalidateGame: vi.fn(),
   restoreGame: vi.fn(),
   deleteGame: vi.fn(),
+  playerIdsOf: vi.fn().mockResolvedValue(['u1', 'u2']),
   getInvalidation: vi.fn().mockResolvedValue(null),
 }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
@@ -80,9 +81,11 @@ const finished = (): HistoryGame => ({
   ],
 })
 
+const onPlayersChanged = vi.fn()
+
 function makeApp() {
   const app = createFastify()
-  app.register(adminGamesApiPlugin, { db: {} as any })
+  app.register(adminGamesApiPlugin, { db: {} as any, onPlayersChanged })
   return app
 }
 
@@ -181,6 +184,7 @@ describe('admin games API', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json()).toEqual({ recalculated: ['1v1'] })
       expect(adminGames.invalidateGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1', 'Wrong board')
+      expect(onPlayersChanged).toHaveBeenCalledWith(['u1', 'u2'])
     })
 
     it('takes no reason, or a blank one, as none', async () => {
@@ -198,6 +202,7 @@ describe('admin games API', () => {
     it('404s an unknown game and 409s one that is not finished or already invalidated', async () => {
       vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('not-found')
       expect((await invalidate({})).statusCode).toBe(404)
+      expect(onPlayersChanged).not.toHaveBeenCalled()
       vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('not-finished')
       expect((await invalidate({})).statusCode).toBe(409)
       vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('already-invalidated')
@@ -214,6 +219,7 @@ describe('admin games API', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json()).toEqual({ recalculated: ['1v1'] })
       expect(adminGames.restoreGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1')
+      expect(onPlayersChanged).toHaveBeenCalledWith(['u1', 'u2'])
     })
 
     it('404s an unknown game and 409s one that is not invalidated', async () => {
@@ -233,6 +239,7 @@ describe('admin games API', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json()).toEqual({ recalculated: ['1v1'] })
       expect(adminGames.deleteGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1')
+      expect(onPlayersChanged).toHaveBeenCalledWith(['u1', 'u2'])
     })
 
     it('403s a moderator, who may invalidate but not delete', async () => {

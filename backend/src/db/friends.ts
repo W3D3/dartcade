@@ -17,6 +17,7 @@ export type FriendshipRow = {
   otherAvatar: Avatar
   /** When the other side was last online, if they let their friends see it (show_last_online); null otherwise. */
   otherLastSeenAt: Date | null
+  otherCountry: string | null
   createdAt: Date
   respondedAt: Date | null
 }
@@ -35,6 +36,7 @@ export type FriendSearchHit = {
   id: string
   name: string
   avatar: Avatar
+  country: string | null
   /** How the two stand: `friends`, an open request `sent` by the searcher or `received` from the hit, or `none`. */
   request: 'none' | 'sent' | 'received' | 'friends'
 }
@@ -52,8 +54,9 @@ export async function searchUsersForFriends(db: Kysely<Database>, term: string, 
     avatar_preset: string | null
     avatar_background: string | null
     avatar_version: number
+    country: string | null
   }>`
-    SELECT u.id, u.name, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version,
+    SELECT u.id, u.name, u.country, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version,
       CASE WHEN f.id IS NULL THEN 'none' WHEN f.status = 'accepted' THEN 'friends' WHEN f.requester_id = ${userId} THEN 'sent' ELSE 'received' END AS request
     FROM "user" u
     LEFT JOIN friendships f ON (f.requester_id = ${userId} AND f.addressee_id = u.id) OR (f.addressee_id = ${userId} AND f.requester_id = u.id)
@@ -63,7 +66,7 @@ export async function searchUsersForFriends(db: Kysely<Database>, term: string, 
       AND (strpos(lower(u.name), lower(${term})) > 0 OR lower(u.email) = lower(${term}))
     ORDER BY starts_with(lower(u.name), lower(${term})) DESC, lower(u.name), u.id
     LIMIT ${limit}`.execute(db)
-  return rows.map(r => ({ id: r.id, name: r.name, request: r.request, avatar: toAvatar(r) }))
+  return rows.map(r => ({ id: r.id, name: r.name, request: r.request, avatar: toAvatar(r), country: r.country }))
 }
 
 /** Discoverable people who share friends with the user and have no friendship or request with them, most in common first. */
@@ -75,13 +78,14 @@ export async function suggestionsFor(db: Kysely<Database>, userId: string, limit
     avatar_preset: string | null
     avatar_background: string | null
     avatar_version: number
+    country: string | null
   }>`
     WITH edges AS (
       SELECT requester_id AS a, addressee_id AS b FROM friendships WHERE status = 'accepted'
       UNION ALL
       SELECT addressee_id AS a, requester_id AS b FROM friendships WHERE status = 'accepted'
     )
-    SELECT u.id, u.name, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version
+    SELECT u.id, u.name, u.country, u.avatar_kind, u.avatar_preset, u.avatar_background, u.avatar_version
     FROM edges mine
     JOIN edges o ON o.b = mine.b AND o.a <> ${userId}
     JOIN "user" u ON u.id = o.a
@@ -94,7 +98,7 @@ export async function suggestionsFor(db: Kysely<Database>, userId: string, limit
     GROUP BY u.id
     ORDER BY count(*) DESC, lower(u.name), u.id
     LIMIT ${limit}`.execute(db)
-  return rows.map(r => ({ id: r.id, name: r.name, request: 'none', avatar: toAvatar(r) }))
+  return rows.map(r => ({ id: r.id, name: r.name, request: 'none', avatar: toAvatar(r), country: r.country }))
 }
 
 export async function friendshipBetween(db: Kysely<Database>, a: string, b: string) {
@@ -164,6 +168,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     other_name: string
     other_invisible: boolean
     other_last_seen_at: Date | null
+    other_country: string | null
     other_avatar_kind: 'none' | 'preset' | 'upload'
     other_avatar_preset: string | null
     other_avatar_background: string | null
@@ -171,7 +176,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     created_at: Date
     responded_at: Date | null
   }>`
-    SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible,
+    SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible, u.country AS other_country,
       CASE WHEN u.show_last_online = 'friends' THEN u.last_seen_at END AS other_last_seen_at,
       u.avatar_kind AS other_avatar_kind, u.avatar_preset AS other_avatar_preset, u.avatar_background AS other_avatar_background,
       u.avatar_version AS other_avatar_version, f.created_at, f.responded_at
@@ -188,6 +193,7 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     otherName: r.other_name,
     otherInvisible: r.other_invisible,
     otherLastSeenAt: r.other_last_seen_at,
+    otherCountry: r.other_country,
     otherAvatar: toAvatar({
       avatar_kind: r.other_avatar_kind,
       avatar_preset: r.other_avatar_preset,

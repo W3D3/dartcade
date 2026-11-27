@@ -103,6 +103,25 @@ export async function x01AverageSince(db: Kysely<Database>, userId: string, days
   return row?.avg == null ? null : Number(row.avg)
 }
 
+/** `x01AverageSince` for several players in one query (now back `days` days): the unrounded dart-weighted average, a player without a game left out. */
+export async function x01AveragesSince(db: Kysely<Database>, userIds: readonly string[], days: number): Promise<Map<string, number>> {
+  const out = new Map<string, number>()
+  if (userIds.length === 0) return out
+  const rows = await x01Seats(db)
+    .select([
+      'p.user_id',
+      sql<
+        string | null
+      >`sum((p.stats->>'average')::float8 * (p.stats->>'dartsThrown')::int) / nullif(sum((p.stats->>'dartsThrown')::int), 0)`.as('avg'),
+    ])
+    .where('p.user_id', 'in', userIds)
+    .where('g.finished_at', '>=', sql<Date>`now() - make_interval(days => ${days})`)
+    .groupBy('p.user_id')
+    .execute()
+  for (const r of rows) if (r.user_id !== null && r.avg !== null) out.set(r.user_id, Number(r.avg))
+  return out
+}
+
 /**
  * Each player's X01 form over the `days` days up to now, as an average limit checks it: the
  * 3-dart average (dart-weighted, one decimal, null without darts) and the legs of those games.

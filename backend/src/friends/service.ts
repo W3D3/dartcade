@@ -3,6 +3,10 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/friends.js'
+import { x01AveragesSince } from '../db/ranked.js'
+import { PROFILE_AVERAGE_DAYS } from '../shared/avgClass.js'
+import { AverageCache, type AverageCacheOptions } from './averageCache.js'
+import type { GameEnded, GameEndedConsumer } from '../session/engine.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import type { components } from '../schema/api.js'
 import { normalizeName } from '../shared/names.js'
@@ -36,6 +40,8 @@ export type FriendsDeps = {
   /** Both sides of every change to a request or friendship. */
   onChange?: (userIds: string[]) => void
   graceMs?: number
+  /** TTL, size and clock of the friends' average cache (tests). */
+  averageCache?: AverageCacheOptions
   debounceMs?: number
   warn?: (message: string, details: unknown) => void
 }
@@ -43,15 +49,17 @@ export type FriendsDeps = {
 const newestFirst = <T extends { createdAt: Date }>(a: T, b: T) => b.createdAt.getTime() - a.createdAt.getTime()
 
 /** Friend requests and friendships: the rules (spec "Friend requests"). */
-export class FriendsService {
+export class FriendsService implements GameEndedConsumer {
   private readonly presence: Presence
   private readonly pushes: KeyedDebounce
   private readonly inflight = new Set<Promise<void>>()
   // Per user, the last push: the next one waits for it, so an older list never lands last
   private readonly pushChains = new KeyedQueue()
+  private readonly averages: AverageCache
   private closed = false
 
   constructor(private readonly deps: FriendsDeps) {
+    this.averages = new AverageCache(ids => x01AveragesSince(deps.db, ids, PROFILE_AVERAGE_DAYS), deps.averageCache)
     this.presence = new Presence(userId => {
       if (this.presence.isOnline(userId)) this.touch([userId])
       else void this.track(this.wentOffline(userId))
@@ -174,6 +182,16 @@ export class FriendsService {
     return msg
   }
 
+  /** These players' X01 history changed (a finished, invalidated, restored or deleted game): their next average is read afresh. */
+  averagesChanged(userIds: readonly string[]): void {
+    this.averages.invalidate(userIds)
+  }
+
+  onGameEnded(e: GameEnded): Promise<void> {
+    if (e.gameId === 'x01' && e.status === 'finished') this.averagesChanged(e.userIds)
+    return Promise.resolve()
+  }
+
   /** Whether the viewer is a friend of any of these accounts who is not Invisible (Watch). */
   async watchable(viewerId: string, userIds: string[]): Promise<boolean> {
     const rows = await q.friendshipsOf(this.db, viewerId)
@@ -192,6 +210,9 @@ export class FriendsService {
     const myLobby = lobbies.get(userId) ?? null
     const invited = myLobby ? await q.pendingInviteesOf(this.db, myLobby.id) : new Set<string>()
     const now = new Date()
+    // Country and average are as public as on the profile (any signed-in player sees both), so nothing extra to hide here
+    const averages = await this.averages.get(rows.map(r => r.otherId))
+    const badges = (r: (typeof rows)[number]) => this.badges(r.otherCountry, averages.get(r.otherId))
     const mutual = await q.mutualFriendCounts(
       this.db,
       userId,
@@ -211,21 +232,27 @@ export class FriendsService {
           inYourLobby: myLobby !== null && lobby?.id === myLobby.id,
           invited: invited.has(r.otherId),
           avatar: r.otherAvatar,
+          ...badges(r),
           ...this.lastSeen(r.otherId, r.otherInvisible, r.otherLastSeenAt, now),
         }
       }),
       incoming: incoming.map(r => ({
         id: r.id,
-        from: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar },
+        from: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar, ...badges(r) },
         mutualFriends: mutual.get(r.otherId) ?? 0,
         createdAt: r.createdAt.toISOString(),
       })),
       outgoing: outgoing.map(r => ({
         id: r.id,
-        to: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar },
+        to: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar, ...badges(r) },
         createdAt: r.createdAt.toISOString(),
       })),
     }
+  }
+
+  /** The flag and average a person's row shows, each left out when there is none. */
+  private badges(country: string | null, average: number | undefined): { country?: string; average?: number } {
+    return { ...(country ? { country } : {}), ...(average === undefined ? {} : { average }) }
   }
 
   // Only for an offline friend who is not Invisible (their choice of Nobody arrives as null)
@@ -281,12 +308,9 @@ export class FriendsService {
   }
 
   private async withMutual(userId: string, hits: q.FriendSearchHit[]): Promise<FriendSearchResult[]> {
-    const mutual = await q.mutualFriendCounts(
-      this.db,
-      userId,
-      hits.map(h => h.id),
-    )
-    return hits.map(h => ({ ...h, mutualFriends: mutual.get(h.id) ?? 0 }))
+    const ids = hits.map(h => h.id)
+    const [mutual, averages] = await Promise.all([q.mutualFriendCounts(this.db, userId, ids), this.averages.get(ids)])
+    return hits.map(({ country, ...h }) => ({ ...h, ...this.badges(country, averages.get(h.id)), mutualFriends: mutual.get(h.id) ?? 0 }))
   }
 
   /** Asks someone by exact name. A request to someone who already asked you accepts theirs. */

@@ -6,6 +6,7 @@ import { requireAdmin, requireModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import {
   deleteGame,
+  playerIdsOf,
   getInvalidation,
   invalidateGame,
   listAllGames,
@@ -21,7 +22,11 @@ import { toSummary } from './games.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database> }
+type Opts = FastifyPluginOptions & {
+  db: Kysely<Database>
+  /** These players' game history changed (a game invalidated, restored or deleted). */
+  onPlayersChanged: (userIds: string[]) => void
+}
 
 function serializeInvalidation(i: Invalidation | null) {
   return i && { at: i.at.toISOString(), by: i.by, reason: i.reason }
@@ -52,7 +57,7 @@ function serialize(g: AdminGame) {
 
 /** Every route here is for admins and moderators, except the hard delete: admins only. */
 export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db } = opts
+  const { db, onPlayersChanged } = opts
   const moderatorOnly = [requireAuth, requireModerator]
   const adminOnly = [requireAuth, requireAdmin]
 
@@ -96,10 +101,12 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     { preValidation: moderatorOnly, schema: fromSpec('invalidateAdminGame') },
     async req => {
       const reason = req.body.reason?.trim() || null
+      const players = await playerIdsOf(db, req.params.id)
       const result = await invalidateGame(db, req.params.id, req.userId, reason)
       if (result === 'not-found') throw notFound()
       if (result === 'not-finished') throw new ApiError(409, { error: 'Only a finished game can be invalidated' })
       if (result === 'already-invalidated') throw new ApiError(409, { error: 'This game is already invalidated' })
+      onPlayersChanged(players)
       req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator invalidated game')
       return result
     },
@@ -109,9 +116,11 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     '/api/admin/games/:id/restore',
     { preValidation: moderatorOnly, schema: fromSpec('restoreAdminGame') },
     async req => {
+      const players = await playerIdsOf(db, req.params.id)
       const result = await restoreGame(db, req.params.id, req.userId)
       if (result === 'not-found') throw notFound()
       if (result === 'not-invalidated') throw new ApiError(409, { error: 'This game is not invalidated' })
+      onPlayersChanged(players)
       req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator restored game')
       return result
     },
@@ -121,9 +130,11 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     '/api/admin/games/:id',
     { preValidation: adminOnly, schema: fromSpec('deleteAdminGame') },
     async req => {
+      const players = await playerIdsOf(db, req.params.id)
       const result = await deleteGame(db, req.params.id, req.userId)
       if (result === 'not-found') throw notFound()
       if (result === 'active') throw new ApiError(409, { error: 'A game in progress cannot be deleted' })
+      onPlayersChanged(players)
       req.log.info({ gameId: req.params.id, adminId: req.userId, recalculated: result.recalculated }, 'admin deleted game')
       return result
     },
