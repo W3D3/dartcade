@@ -21,6 +21,12 @@ export function segAngle(i: number): number {
   return Math.PI / 2 - i * 2 * HALF
 }
 
+/** The SVG path of the ring between radii r1 and r2 from angle a1 to a2 (board units; SVG's y is down). */
+export function sectorPath(r1: number, r2: number, a1: number, a2: number): string {
+  const [c1, s1, c2, s2] = [Math.cos(a1), Math.sin(a1), Math.cos(a2), Math.sin(a2)]
+  return `M${r1 * c1} ${-r1 * s1} L${r2 * c1} ${-r2 * s1} A${r2} ${r2} 0 0 1 ${r2 * c2} ${-r2 * s2} L${r1 * c2} ${-r1 * s2} A${r1} ${r1} 0 0 0 ${r1 * c1} ${-r1 * s1}Z`
+}
+
 const RING_BED: Record<string, { bed: Segment['bed']; multiplier: Segment['multiplier'] }> = {
   si: { bed: 'SingleOuter', multiplier: 1 },
   tr: { bed: 'Triple', multiplier: 3 },
