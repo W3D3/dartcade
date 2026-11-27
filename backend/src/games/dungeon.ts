@@ -4,7 +4,15 @@
 import { defencesAt } from '../shared/dungeon/content/enemies.js'
 import { intentOf, intentValue } from '../shared/dungeon/enemyTurn.js'
 import { hitOf } from '../shared/dungeon/hit.js'
-import { DEFAULT_CONFIG, DIFFICULTIES, DUNGEON_RULES, FLOOR_COUNTS, rulesOf, type DungeonConfig } from '../shared/dungeon/rules.js'
+import {
+  DEFAULT_CONFIG,
+  DIFFICULTIES,
+  DIFFICULTY_LABEL,
+  DUNGEON_RULES,
+  FLOOR_COUNTS,
+  rulesOf,
+  type DungeonConfig,
+} from '../shared/dungeon/rules.js'
 import {
   beginRun,
   endVisit,
@@ -25,8 +33,6 @@ import { validateOptions } from './configMeta.js'
 import { row, values } from './matchStats.js'
 
 export type { DungeonConfig }
-
-const DIFFICULTY_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' } as const
 
 export const configMeta: Record<keyof DungeonConfig, ConfigFieldMeta> = {
   difficulty: {

@@ -1,6 +1,7 @@
 // Each game's rules as one line, from its config, for every place that shows them: the match
 // header, the win screen, History, the details page and the lobby's next game. One parser per
 // game: a config that doesn't parse (an old or foreign one) gives no line rather than a wrong one.
+import { DIFFICULTY_LABEL } from '$shared/dungeon/rules'
 import { z } from 'zod'
 import { isGameId, type GameId } from '$shared/gameNames'
 import { COURSES } from '$shared/minigolf/courses/index'
@@ -26,7 +27,6 @@ const HiloConfigSchema = z.object({ startHigh: int, startLow: int, lives: int })
 const ShanghaiConfigSchema = z.object({ start: int, end: int, bullRound: z.boolean().catch(false), shanghaiWins: z.boolean().catch(true) })
 const CricketConfigSchema = z.object({ mode: z.enum(['standard', 'cutthroat']), firstTo: int })
 const DungeonConfigSchema = z.object({ difficulty: z.enum(['easy', 'medium', 'hard', 'expert']), floors: int })
-const DUNGEON_DIFFICULTY = { easy: 'Easy', medium: 'Medium', hard: 'Hard', expert: 'Expert' } as const
 const MissionConfigSchema = z.object({
   mission: z.object({ name: z.string(), order: z.enum(['any', 'in_order']), steps: z.array(z.unknown()) }),
 })
@@ -103,7 +103,7 @@ const RULES = {
   // "Medium · 9 floors"
   dungeon: config => {
     const c = DungeonConfigSchema.safeParse(config)
-    return c.success ? `${DUNGEON_DIFFICULTY[c.data.difficulty]} · ${c.data.floors} floors` : ''
+    return c.success ? `${DIFFICULTY_LABEL[c.data.difficulty]} · ${c.data.floors} floors` : ''
   },
   minigolf: (config, players, { course }) => {
     const c = MinigolfConfigSchema.safeParse(config)

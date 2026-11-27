@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { beginRun, pickClass, startRun } from '$shared/dungeon/run'
+import { DIFFICULTY_LABEL } from '$shared/dungeon/rules'
+import { runSummary } from '$shared/dungeon/summary'
 import { formatWhen, rulesLine, playerBadges, resultLabel, historyStat, statTiles, loadColumnSizing, saveColumnSizing } from '../history.js'
 import type { GameSummary, GameStats } from '../api'
 
@@ -48,6 +51,14 @@ describe('formatWhen', () => {
 })
 
 describe('rulesLine', () => {
+  it('Dungeon: the line names the difficulty and length the run was played at (the stored config)', () => {
+    const config = { difficulty: 'hard' as const, floors: 7 as const }
+    let run = startRun(config, 1, 1)
+    run = beginRun(pickClass(run, 0, 'archer', null))
+    const played = runSummary(run)
+    expect(rulesLine(game({ mode: 'dungeon', config }))).toBe(`${DIFFICULTY_LABEL[played.difficulty]} · ${played.floors} floors`)
+    expect(rulesLine(game({ mode: 'dungeon', config }))).toBe('Hard · 7 floors')
+  })
   it('per mode from the config', () => {
     expect(rulesLine(game())).toBe('501 · Double out · First to 3 legs')
     expect(

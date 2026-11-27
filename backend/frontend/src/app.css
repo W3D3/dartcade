@@ -97,6 +97,19 @@
   --color-ice-soft: #17202e;
   /* The Report a bug button: orange, apart from the lime accent, the red of live and danger, and the yellow of warn */
   --color-bug: #ff9a3d;
+  /* Dungeon's purple stone and gold (the Dungeon-Pixel artboards); used only by its screens */
+  --color-dg-bg: #14101a;
+  --color-dg-panel: #211b2a;
+  --color-dg-raised: #2c2438;
+  --color-dg-line: #4a3f5c;
+  --color-dg-dashed: #3b3347;
+  --color-dg-text: #f0e8d8;
+  --color-dg-muted: #b3a8c4;
+  --color-dg-dim: #7a6e8c;
+  --color-dg-gold: #f2c14e;
+  --color-dg-hp: #e0463c;
+  --color-dg-block: #5aa0e8;
+  --color-dg-heal: #5bd37a;
   /* A challenge one step from done (Progress board) */
   --color-gold: #f2b94e;
   --color-gold-line: #6b5a2a;
