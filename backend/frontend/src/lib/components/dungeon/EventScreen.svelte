@@ -24,10 +24,10 @@
 </script>
 
 {#if event}
-  <main class="flex h-full flex-col gap-3 overflow-y-auto bg-bg p-3 text-text md:p-5" data-testid="dungeon-event">
-    <h2 class="font-display text-2xl font-bold uppercase text-gold">{event.title}</h2>
+  <main class="flex h-full flex-col gap-3 overflow-y-auto bg-dg-bg p-3 text-dg-text md:p-5" data-testid="dungeon-event">
+    <h2 class="font-display text-2xl font-bold uppercase text-dg-gold">{event.title}</h2>
     <p class="text-lg">{event.text}</p>
-    <p class="text-sm text-text-muted">
+    <p class="text-sm text-dg-muted">
       {voters.filter(s => votes[s] !== null).length} of {voters.length} voted{voting !== undefined
         ? ` · ${names[voting]} votes`
         : ' · waiting for the party'}
@@ -35,9 +35,9 @@
     <ul class="flex flex-col gap-2">
       {#each event.decisions as d, decision (d.label)}
         {@const who = voters.filter(s => votes[s] === decision)}
-        <li class="flex flex-wrap items-center gap-3 rounded-xl border border-line bg-surface-panel p-3" data-testid="decision">
+        <li class="flex flex-wrap items-center gap-3 rounded-xl border border-dg-line bg-dg-panel p-3" data-testid="decision">
           <span class="flex-1 font-display text-lg font-bold">{d.label}</span>
-          {#if who.length}<span class="text-sm text-text-muted">{who.map(s => names[s]).join(', ')}</span>{/if}
+          {#if who.length}<span class="text-sm text-dg-muted">{who.map(s => names[s]).join(', ')}</span>{/if}
           {#if voting !== undefined}
             <Button variant="outline" onclick={() => send({ type: 'dungeon_vote', seat: voting, decision })}>Vote</Button>
           {/if}

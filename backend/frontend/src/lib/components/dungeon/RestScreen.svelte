@@ -17,12 +17,12 @@
   )
 </script>
 
-<main class="flex h-full flex-col items-center gap-3 overflow-y-auto bg-bg p-3 text-text md:p-5" data-testid="dungeon-rest">
-  <h2 class="font-display text-2xl font-bold uppercase text-gold">Rest · floor {game.floor}</h2>
-  <p class="text-text-muted">Each hero throws one visit and heals by its score.</p>
+<main class="flex h-full flex-col items-center gap-3 overflow-y-auto bg-dg-bg p-3 text-dg-text md:p-5" data-testid="dungeon-rest">
+  <h2 class="font-display text-2xl font-bold uppercase text-dg-gold">Rest · floor {game.floor}</h2>
+  <p class="text-dg-muted">Each hero throws one visit and heals by its score.</p>
   <ul class="flex w-full max-w-3xl flex-wrap justify-center gap-2">
     {#each game.heroes as h (h.seat)}
-      <li class="rounded-lg border px-3 py-1 {h.seat === game.currentPlayer ? 'border-gold' : 'border-line'}" data-testid="hero">
+      <li class="rounded-lg border px-3 py-1 {h.seat === game.currentPlayer ? 'border-dg-gold' : 'border-dg-line'}" data-testid="hero">
         {names[h.seat]} · {h.hp}/{h.maxHp}
       </li>
     {/each}
