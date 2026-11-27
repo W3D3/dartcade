@@ -73,8 +73,8 @@ export type ContentEntry = {
 /** An enemy's defences: what doubles, halves or stops a dart. */
 export type Defences = { weak: Spot[]; resist: Spot[]; immune: Spot[] }
 
-/** An enemy's action for one round. `pierce`: the attack ignores block. */
-export type Intent = { kind: 'attack'; value: number; pierce?: true } | { kind: 'none' }
+/** An enemy's action for one round, with the name the screen and the log give it. `pierce`: the attack ignores block. */
+export type Intent = { kind: 'attack'; name: string; value: number; pierce?: true } | { kind: 'none'; name: string }
 
 export type EnemyEntry = {
   name: string

@@ -21,7 +21,7 @@ export const intentValue = (enemy: Enemy, round: number, difficulty: Difficulty,
 
 /** What the turn did, for the screen. */
 export type EnemyTurnLog = {
-  attacks: { uid: string; hits: { seat: number; blocked: number; damage: number }[] }[]
+  attacks: { uid: string; name: string; hits: { seat: number; blocked: number; damage: number }[] }[]
   burns: { uid: string; damage: number }[]
 }
 
@@ -43,7 +43,7 @@ export function enemyTurn(heroesIn: Hero[], enemiesIn: Enemy[], round: number, d
         h.hp -= damage
         return { seat: h.seat, blocked, damage }
       })
-      log.attacks.push({ uid: enemy.uid, hits })
+      log.attacks.push({ uid: enemy.uid, name: intent.name, hits })
     }
     enemy.chilled = false
   }

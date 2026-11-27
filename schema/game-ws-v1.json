@@ -3263,12 +3263,16 @@
         },
         "intent": {
           "type": "object",
-          "required": ["kind", "value", "pierce"],
+          "required": ["kind", "name", "value", "pierce"],
           "additionalProperties": false,
           "properties": {
             "kind": {
               "type": "string",
               "enum": ["attack", "none"]
+            },
+            "name": {
+              "type": "string",
+              "description": "What the intent is called on screen and in the log (Bone Slash)."
             },
             "value": {
               "anyOf": [
@@ -3482,6 +3486,7 @@
             "event",
             "lastEvent",
             "lastHeal",
+            "lastReward",
             "path",
             "summary"
           ],
@@ -3670,11 +3675,15 @@
                               "type": "array",
                               "items": {
                                 "type": "object",
-                                "required": ["uid", "hits"],
+                                "required": ["uid", "name", "hits"],
                                 "additionalProperties": false,
                                 "properties": {
                                   "uid": {
                                     "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "description": "The attack's name (the intent it carried out)."
                                   },
                                   "hits": {
                                     "type": "array",
@@ -3869,6 +3878,29 @@
                       "minimum": 0
                     },
                     "amount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lastReward": {
+              "description": "The gold the last won fight paid; news while the run's cleared equals its cleared.",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": ["gold", "cleared"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "gold": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "cleared": {
                       "type": "integer",
                       "minimum": 0
                     }

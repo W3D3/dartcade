@@ -713,6 +713,10 @@ export type DungeonGame = EngineGameFields & {
     lastEnemyTurn: {
       attacks: {
         uid: string
+        /**
+         * The attack's name (the intent it carried out).
+         */
+        name: string
         hits: {
           seat: number
           blocked: number
@@ -753,6 +757,13 @@ export type DungeonGame = EngineGameFields & {
   lastHeal: {
     seat: number
     amount: number
+  } | null
+  /**
+   * The gold the last won fight paid; news while the run's cleared equals its cleared.
+   */
+  lastReward: {
+    gold: number
+    cleared: number
   } | null
   /**
    * The lane taken on each floor, from floor 1.
@@ -1435,6 +1446,10 @@ export interface DungeonEnemy {
    */
   intent: {
     kind: 'attack' | 'none'
+    /**
+     * What the intent is called on screen and in the log (Bone Slash).
+     */
+    name: string
     /**
      * Damage per hero after the difficulty and Chill, before block.
      */

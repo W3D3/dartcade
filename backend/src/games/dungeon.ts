@@ -155,6 +155,7 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
             ...e,
             intent: {
               kind: intent.kind,
+              name: intent.name,
               value: intentValue(e, battle.round, s.cfg.difficulty, DUNGEON_RULES),
               pierce: 'pierce' in intent && intent.pierce === true,
             },
@@ -168,6 +169,7 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
       event: scene.phase === 'event' ? { id: scene.event, votes: scene.votes } : null,
       lastEvent: s.lastEvent,
       lastHeal: s.lastHeal,
+      lastReward: s.lastReward,
       summary: over(s) ? runSummary(s) : null,
     }
   },

@@ -170,6 +170,7 @@ describe('a fight', () => {
     expect(s.scene.phase).toBe('map')
     expect(s.cleared).toBe(1)
     expect(s.gold).toBe(12)
+    expect(s.lastReward).toEqual({ gold: 12, cleared: 1 })
   })
 
   it("keeps each hero's numbers for the summary", () => {
