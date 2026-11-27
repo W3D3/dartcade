@@ -52,8 +52,14 @@ export type SeatStats = {
 /** The run's best visit, for the summary. */
 export type BestVisit = { seat: number; darts: { number: number; ring: Ring }[]; damage: number; enemy: EnemyId | null }
 
-/** What the last event did, for the screen. */
-export type EventResult = { id: EventId; decision: number; items: PlacedItem[]; artifacts: { seat: number; artifact: ArtifactId }[] }
+/** What the last event did, for the screen; `cleared` is the run's rooms cleared once it was over, so it is news until another room is. */
+export type EventResult = {
+  id: EventId
+  decision: number
+  cleared: number
+  items: PlacedItem[]
+  artifacts: { seat: number; artifact: ArtifactId }[]
+}
 
 export type RunState = {
   cfg: DungeonConfig
@@ -403,7 +409,7 @@ export function voteEvent(s: RunState, seat: number, decision: number): RunState
 
 function applyOutcomes(s: RunState, id: EventId, decision: number, rng: Rng): RunState {
   const outcomes: readonly Outcome[] = EVENTS[id].decisions[decision].outcomes
-  const result: EventResult = { id, decision, items: [], artifacts: [] }
+  const result: EventResult = { id, decision, cleared: s.cleared + 1, items: [], artifacts: [] }
   const slots = rulesOf(s.cfg).slotsPerNumber
   let next: RunState = s
   for (const o of outcomes) {
