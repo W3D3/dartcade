@@ -11449,8 +11449,8 @@
                                 "event",
                                 "lastEvent",
                                 "lastHeal",
-                                "damage",
-                                "bestVisit"
+                                "path",
+                                "summary"
                               ],
                               "properties": {
                                 "phase": {
@@ -11487,17 +11487,14 @@
                                 "room": {
                                   "anyOf": [
                                     {
-                                      "title": "DungeonSide",
-                                      "type": "string",
-                                      "enum": [
-                                        "left",
-                                        "right"
-                                      ]
+                                      "type": "integer",
+                                      "minimum": 0
                                     },
                                     {
                                       "type": "null"
                                     }
-                                  ]
+                                  ],
+                                  "description": "The lane of the room the party is in; null before the first room."
                                 },
                                 "cleared": {
                                   "type": "integer",
@@ -11505,41 +11502,52 @@
                                   "description": "Rooms finished."
                                 },
                                 "map": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "required": [
-                                        "side",
-                                        "type"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "side": {
-                                          "title": "DungeonSide",
-                                          "type": "string",
-                                          "enum": [
-                                            "left",
-                                            "right"
-                                          ]
-                                        },
-                                        "type": {
-                                          "type": "string",
-                                          "enum": [
-                                            "fight",
-                                            "elite",
-                                            "boss",
-                                            "treasure",
-                                            "rest",
-                                            "event",
-                                            "shop"
-                                          ]
+                                  "type": "object",
+                                  "required": [
+                                    "lanes",
+                                    "floors"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "lanes": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "floors": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "array",
+                                        "items": {
+                                          "title": "DungeonMapRoom",
+                                          "type": "object",
+                                          "required": [
+                                            "lane",
+                                            "type"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "lane": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "type": {
+                                              "type": "string",
+                                              "enum": [
+                                                "fight",
+                                                "elite",
+                                                "boss",
+                                                "treasure",
+                                                "rest",
+                                                "event",
+                                                "shop"
+                                              ]
+                                            }
+                                          }
                                         }
-                                      }
+                                      },
+                                      "description": "Floors from 1 up; a room in lane c leads to lanes c - 1 and c + 1 above. Empty until the run starts."
                                     }
-                                  },
-                                  "description": "Floors from 1 up; each room leads to every room of the floor above."
+                                  }
                                 },
                                 "votes": {
                                   "type": "array",
@@ -12442,20 +12450,286 @@
                                     }
                                   ]
                                 },
-                                "damage": {
+                                "path": {
                                   "type": "array",
                                   "items": {
                                     "type": "integer",
                                     "minimum": 0
                                   },
-                                  "description": "Damage dealt in the run, per seat."
+                                  "description": "The lane taken on each floor, from floor 1."
                                 },
-                                "bestVisit": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "integer",
-                                    "minimum": 0
-                                  }
+                                "summary": {
+                                  "anyOf": [
+                                    {
+                                      "title": "DungeonSummary",
+                                      "type": "object",
+                                      "required": [
+                                        "outcome",
+                                        "difficulty",
+                                        "floors",
+                                        "cleared",
+                                        "gold",
+                                        "path",
+                                        "heroes",
+                                        "best"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "outcome": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "victory",
+                                                "defeat"
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "Null for a run that was given up or is still going."
+                                        },
+                                        "difficulty": {
+                                          "type": "string",
+                                          "enum": [
+                                            "easy",
+                                            "medium",
+                                            "hard",
+                                            "expert"
+                                          ]
+                                        },
+                                        "floors": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "cleared": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "description": "Rooms the party finished."
+                                        },
+                                        "gold": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "path": {
+                                          "type": "array",
+                                          "items": {
+                                            "title": "DungeonMapRoom",
+                                            "type": "object",
+                                            "required": [
+                                              "lane",
+                                              "type"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "lane": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "fight",
+                                                  "elite",
+                                                  "boss",
+                                                  "treasure",
+                                                  "rest",
+                                                  "event",
+                                                  "shop"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "description": "The rooms taken, from floor 1."
+                                        },
+                                        "heroes": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "seat",
+                                              "classId",
+                                              "hp",
+                                              "maxHp",
+                                              "artifacts",
+                                              "damage",
+                                              "bestVisit",
+                                              "healed",
+                                              "blocked",
+                                              "bestDart",
+                                              "damageByFloor"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "seat": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "classId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "hp": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "maxHp": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "artifacts": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "damage": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "bestVisit": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "healed": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "description": "HP their effects and their rest restored, across the party."
+                                              },
+                                              "blocked": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "description": "Block their effects gave, across the party."
+                                              },
+                                              "bestDart": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "required": [
+                                                      "number",
+                                                      "ring",
+                                                      "damage"
+                                                    ],
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                      "number": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      },
+                                                      "ring": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "single",
+                                                          "double",
+                                                          "treble",
+                                                          "bull",
+                                                          "bullseye",
+                                                          "miss"
+                                                        ]
+                                                      },
+                                                      "damage": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "damageByFloor": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "description": "From floor 1."
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "best": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "seat",
+                                                "darts",
+                                                "damage",
+                                                "enemy"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "seat": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "darts": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "required": [
+                                                      "number",
+                                                      "ring"
+                                                    ],
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                      "number": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      },
+                                                      "ring": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "single",
+                                                          "double",
+                                                          "treble",
+                                                          "bull",
+                                                          "bullseye",
+                                                          "miss"
+                                                        ]
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "damage": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "enemy": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The run's best visit."
+                                        }
+                                      },
+                                      "description": "A Dungeon run's summary: the end screen and the details page (shared/dungeon/summary.ts)."
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Set once the run is over."
                                 }
                               }
                             }
@@ -23900,8 +24174,8 @@
                                 "event",
                                 "lastEvent",
                                 "lastHeal",
-                                "damage",
-                                "bestVisit"
+                                "path",
+                                "summary"
                               ],
                               "properties": {
                                 "phase": {
@@ -23938,17 +24212,14 @@
                                 "room": {
                                   "anyOf": [
                                     {
-                                      "title": "DungeonSide",
-                                      "type": "string",
-                                      "enum": [
-                                        "left",
-                                        "right"
-                                      ]
+                                      "type": "integer",
+                                      "minimum": 0
                                     },
                                     {
                                       "type": "null"
                                     }
-                                  ]
+                                  ],
+                                  "description": "The lane of the room the party is in; null before the first room."
                                 },
                                 "cleared": {
                                   "type": "integer",
@@ -23956,41 +24227,52 @@
                                   "description": "Rooms finished."
                                 },
                                 "map": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "array",
-                                    "items": {
-                                      "type": "object",
-                                      "required": [
-                                        "side",
-                                        "type"
-                                      ],
-                                      "additionalProperties": false,
-                                      "properties": {
-                                        "side": {
-                                          "title": "DungeonSide",
-                                          "type": "string",
-                                          "enum": [
-                                            "left",
-                                            "right"
-                                          ]
-                                        },
-                                        "type": {
-                                          "type": "string",
-                                          "enum": [
-                                            "fight",
-                                            "elite",
-                                            "boss",
-                                            "treasure",
-                                            "rest",
-                                            "event",
-                                            "shop"
-                                          ]
+                                  "type": "object",
+                                  "required": [
+                                    "lanes",
+                                    "floors"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "lanes": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "floors": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "array",
+                                        "items": {
+                                          "title": "DungeonMapRoom",
+                                          "type": "object",
+                                          "required": [
+                                            "lane",
+                                            "type"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "lane": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "type": {
+                                              "type": "string",
+                                              "enum": [
+                                                "fight",
+                                                "elite",
+                                                "boss",
+                                                "treasure",
+                                                "rest",
+                                                "event",
+                                                "shop"
+                                              ]
+                                            }
+                                          }
                                         }
-                                      }
+                                      },
+                                      "description": "Floors from 1 up; a room in lane c leads to lanes c - 1 and c + 1 above. Empty until the run starts."
                                     }
-                                  },
-                                  "description": "Floors from 1 up; each room leads to every room of the floor above."
+                                  }
                                 },
                                 "votes": {
                                   "type": "array",
@@ -24893,20 +25175,286 @@
                                     }
                                   ]
                                 },
-                                "damage": {
+                                "path": {
                                   "type": "array",
                                   "items": {
                                     "type": "integer",
                                     "minimum": 0
                                   },
-                                  "description": "Damage dealt in the run, per seat."
+                                  "description": "The lane taken on each floor, from floor 1."
                                 },
-                                "bestVisit": {
-                                  "type": "array",
-                                  "items": {
-                                    "type": "integer",
-                                    "minimum": 0
-                                  }
+                                "summary": {
+                                  "anyOf": [
+                                    {
+                                      "title": "DungeonSummary",
+                                      "type": "object",
+                                      "required": [
+                                        "outcome",
+                                        "difficulty",
+                                        "floors",
+                                        "cleared",
+                                        "gold",
+                                        "path",
+                                        "heroes",
+                                        "best"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "outcome": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "victory",
+                                                "defeat"
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "Null for a run that was given up or is still going."
+                                        },
+                                        "difficulty": {
+                                          "type": "string",
+                                          "enum": [
+                                            "easy",
+                                            "medium",
+                                            "hard",
+                                            "expert"
+                                          ]
+                                        },
+                                        "floors": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "cleared": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "description": "Rooms the party finished."
+                                        },
+                                        "gold": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "path": {
+                                          "type": "array",
+                                          "items": {
+                                            "title": "DungeonMapRoom",
+                                            "type": "object",
+                                            "required": [
+                                              "lane",
+                                              "type"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "lane": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "type": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "fight",
+                                                  "elite",
+                                                  "boss",
+                                                  "treasure",
+                                                  "rest",
+                                                  "event",
+                                                  "shop"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "description": "The rooms taken, from floor 1."
+                                        },
+                                        "heroes": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "seat",
+                                              "classId",
+                                              "hp",
+                                              "maxHp",
+                                              "artifacts",
+                                              "damage",
+                                              "bestVisit",
+                                              "healed",
+                                              "blocked",
+                                              "bestDart",
+                                              "damageByFloor"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "seat": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "classId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "hp": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "maxHp": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "artifacts": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "damage": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "bestVisit": {
+                                                "type": "integer",
+                                                "minimum": 0
+                                              },
+                                              "healed": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "description": "HP their effects and their rest restored, across the party."
+                                              },
+                                              "blocked": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "description": "Block their effects gave, across the party."
+                                              },
+                                              "bestDart": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "required": [
+                                                      "number",
+                                                      "ring",
+                                                      "damage"
+                                                    ],
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                      "number": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      },
+                                                      "ring": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "single",
+                                                          "double",
+                                                          "treble",
+                                                          "bull",
+                                                          "bullseye",
+                                                          "miss"
+                                                        ]
+                                                      },
+                                                      "damage": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      }
+                                                    }
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "damageByFloor": {
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "description": "From floor 1."
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "best": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "required": [
+                                                "seat",
+                                                "darts",
+                                                "damage",
+                                                "enemy"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "seat": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "darts": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "required": [
+                                                      "number",
+                                                      "ring"
+                                                    ],
+                                                    "additionalProperties": false,
+                                                    "properties": {
+                                                      "number": {
+                                                        "type": "integer",
+                                                        "minimum": 0
+                                                      },
+                                                      "ring": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "single",
+                                                          "double",
+                                                          "treble",
+                                                          "bull",
+                                                          "bullseye",
+                                                          "miss"
+                                                        ]
+                                                      }
+                                                    }
+                                                  }
+                                                },
+                                                "damage": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "enemy": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ],
+                                          "description": "The run's best visit."
+                                        }
+                                      },
+                                      "description": "A Dungeon run's summary: the end screen and the details page (shared/dungeon/summary.ts)."
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ],
+                                  "description": "Set once the run is over."
                                 }
                               }
                             }
@@ -36422,8 +36970,8 @@
                                     "event",
                                     "lastEvent",
                                     "lastHeal",
-                                    "damage",
-                                    "bestVisit"
+                                    "path",
+                                    "summary"
                                   ],
                                   "properties": {
                                     "phase": {
@@ -36460,17 +37008,14 @@
                                     "room": {
                                       "anyOf": [
                                         {
-                                          "title": "DungeonSide",
-                                          "type": "string",
-                                          "enum": [
-                                            "left",
-                                            "right"
-                                          ]
+                                          "type": "integer",
+                                          "minimum": 0
                                         },
                                         {
                                           "type": "null"
                                         }
-                                      ]
+                                      ],
+                                      "description": "The lane of the room the party is in; null before the first room."
                                     },
                                     "cleared": {
                                       "type": "integer",
@@ -36478,41 +37023,52 @@
                                       "description": "Rooms finished."
                                     },
                                     "map": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "required": [
-                                            "side",
-                                            "type"
-                                          ],
-                                          "additionalProperties": false,
-                                          "properties": {
-                                            "side": {
-                                              "title": "DungeonSide",
-                                              "type": "string",
-                                              "enum": [
-                                                "left",
-                                                "right"
-                                              ]
-                                            },
-                                            "type": {
-                                              "type": "string",
-                                              "enum": [
-                                                "fight",
-                                                "elite",
-                                                "boss",
-                                                "treasure",
-                                                "rest",
-                                                "event",
-                                                "shop"
-                                              ]
+                                      "type": "object",
+                                      "required": [
+                                        "lanes",
+                                        "floors"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "lanes": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "floors": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "title": "DungeonMapRoom",
+                                              "type": "object",
+                                              "required": [
+                                                "lane",
+                                                "type"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "lane": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "fight",
+                                                    "elite",
+                                                    "boss",
+                                                    "treasure",
+                                                    "rest",
+                                                    "event",
+                                                    "shop"
+                                                  ]
+                                                }
+                                              }
                                             }
-                                          }
+                                          },
+                                          "description": "Floors from 1 up; a room in lane c leads to lanes c - 1 and c + 1 above. Empty until the run starts."
                                         }
-                                      },
-                                      "description": "Floors from 1 up; each room leads to every room of the floor above."
+                                      }
                                     },
                                     "votes": {
                                       "type": "array",
@@ -37415,20 +37971,286 @@
                                         }
                                       ]
                                     },
-                                    "damage": {
+                                    "path": {
                                       "type": "array",
                                       "items": {
                                         "type": "integer",
                                         "minimum": 0
                                       },
-                                      "description": "Damage dealt in the run, per seat."
+                                      "description": "The lane taken on each floor, from floor 1."
                                     },
-                                    "bestVisit": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "integer",
-                                        "minimum": 0
-                                      }
+                                    "summary": {
+                                      "anyOf": [
+                                        {
+                                          "title": "DungeonSummary",
+                                          "type": "object",
+                                          "required": [
+                                            "outcome",
+                                            "difficulty",
+                                            "floors",
+                                            "cleared",
+                                            "gold",
+                                            "path",
+                                            "heroes",
+                                            "best"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "outcome": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "victory",
+                                                    "defeat"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "Null for a run that was given up or is still going."
+                                            },
+                                            "difficulty": {
+                                              "type": "string",
+                                              "enum": [
+                                                "easy",
+                                                "medium",
+                                                "hard",
+                                                "expert"
+                                              ]
+                                            },
+                                            "floors": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "cleared": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "description": "Rooms the party finished."
+                                            },
+                                            "gold": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "path": {
+                                              "type": "array",
+                                              "items": {
+                                                "title": "DungeonMapRoom",
+                                                "type": "object",
+                                                "required": [
+                                                  "lane",
+                                                  "type"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "lane": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "fight",
+                                                      "elite",
+                                                      "boss",
+                                                      "treasure",
+                                                      "rest",
+                                                      "event",
+                                                      "shop"
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "description": "The rooms taken, from floor 1."
+                                            },
+                                            "heroes": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "required": [
+                                                  "seat",
+                                                  "classId",
+                                                  "hp",
+                                                  "maxHp",
+                                                  "artifacts",
+                                                  "damage",
+                                                  "bestVisit",
+                                                  "healed",
+                                                  "blocked",
+                                                  "bestDart",
+                                                  "damageByFloor"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "seat": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "classId": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "hp": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "maxHp": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "artifacts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "damage": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "bestVisit": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "healed": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "description": "HP their effects and their rest restored, across the party."
+                                                  },
+                                                  "blocked": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "description": "Block their effects gave, across the party."
+                                                  },
+                                                  "bestDart": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "number",
+                                                          "ring",
+                                                          "damage"
+                                                        ],
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "number": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          },
+                                                          "ring": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "single",
+                                                              "double",
+                                                              "treble",
+                                                              "bull",
+                                                              "bullseye",
+                                                              "miss"
+                                                            ]
+                                                          },
+                                                          "damage": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          }
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "damageByFloor": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "description": "From floor 1."
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "best": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "seat",
+                                                    "darts",
+                                                    "damage",
+                                                    "enemy"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "seat": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "darts": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "number",
+                                                          "ring"
+                                                        ],
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "number": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          },
+                                                          "ring": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "single",
+                                                              "double",
+                                                              "treble",
+                                                              "bull",
+                                                              "bullseye",
+                                                              "miss"
+                                                            ]
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    "damage": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "enemy": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The run's best visit."
+                                            }
+                                          },
+                                          "description": "A Dungeon run's summary: the end screen and the details page (shared/dungeon/summary.ts)."
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Set once the run is over."
                                     }
                                   }
                                 }
@@ -48873,8 +49695,8 @@
                                     "event",
                                     "lastEvent",
                                     "lastHeal",
-                                    "damage",
-                                    "bestVisit"
+                                    "path",
+                                    "summary"
                                   ],
                                   "properties": {
                                     "phase": {
@@ -48911,17 +49733,14 @@
                                     "room": {
                                       "anyOf": [
                                         {
-                                          "title": "DungeonSide",
-                                          "type": "string",
-                                          "enum": [
-                                            "left",
-                                            "right"
-                                          ]
+                                          "type": "integer",
+                                          "minimum": 0
                                         },
                                         {
                                           "type": "null"
                                         }
-                                      ]
+                                      ],
+                                      "description": "The lane of the room the party is in; null before the first room."
                                     },
                                     "cleared": {
                                       "type": "integer",
@@ -48929,41 +49748,52 @@
                                       "description": "Rooms finished."
                                     },
                                     "map": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "array",
-                                        "items": {
-                                          "type": "object",
-                                          "required": [
-                                            "side",
-                                            "type"
-                                          ],
-                                          "additionalProperties": false,
-                                          "properties": {
-                                            "side": {
-                                              "title": "DungeonSide",
-                                              "type": "string",
-                                              "enum": [
-                                                "left",
-                                                "right"
-                                              ]
-                                            },
-                                            "type": {
-                                              "type": "string",
-                                              "enum": [
-                                                "fight",
-                                                "elite",
-                                                "boss",
-                                                "treasure",
-                                                "rest",
-                                                "event",
-                                                "shop"
-                                              ]
+                                      "type": "object",
+                                      "required": [
+                                        "lanes",
+                                        "floors"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "lanes": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "floors": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "array",
+                                            "items": {
+                                              "title": "DungeonMapRoom",
+                                              "type": "object",
+                                              "required": [
+                                                "lane",
+                                                "type"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "lane": {
+                                                  "type": "integer",
+                                                  "minimum": 0
+                                                },
+                                                "type": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "fight",
+                                                    "elite",
+                                                    "boss",
+                                                    "treasure",
+                                                    "rest",
+                                                    "event",
+                                                    "shop"
+                                                  ]
+                                                }
+                                              }
                                             }
-                                          }
+                                          },
+                                          "description": "Floors from 1 up; a room in lane c leads to lanes c - 1 and c + 1 above. Empty until the run starts."
                                         }
-                                      },
-                                      "description": "Floors from 1 up; each room leads to every room of the floor above."
+                                      }
                                     },
                                     "votes": {
                                       "type": "array",
@@ -49866,20 +50696,286 @@
                                         }
                                       ]
                                     },
-                                    "damage": {
+                                    "path": {
                                       "type": "array",
                                       "items": {
                                         "type": "integer",
                                         "minimum": 0
                                       },
-                                      "description": "Damage dealt in the run, per seat."
+                                      "description": "The lane taken on each floor, from floor 1."
                                     },
-                                    "bestVisit": {
-                                      "type": "array",
-                                      "items": {
-                                        "type": "integer",
-                                        "minimum": 0
-                                      }
+                                    "summary": {
+                                      "anyOf": [
+                                        {
+                                          "title": "DungeonSummary",
+                                          "type": "object",
+                                          "required": [
+                                            "outcome",
+                                            "difficulty",
+                                            "floors",
+                                            "cleared",
+                                            "gold",
+                                            "path",
+                                            "heroes",
+                                            "best"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "outcome": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "victory",
+                                                    "defeat"
+                                                  ]
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "Null for a run that was given up or is still going."
+                                            },
+                                            "difficulty": {
+                                              "type": "string",
+                                              "enum": [
+                                                "easy",
+                                                "medium",
+                                                "hard",
+                                                "expert"
+                                              ]
+                                            },
+                                            "floors": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "cleared": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "description": "Rooms the party finished."
+                                            },
+                                            "gold": {
+                                              "type": "integer",
+                                              "minimum": 0
+                                            },
+                                            "path": {
+                                              "type": "array",
+                                              "items": {
+                                                "title": "DungeonMapRoom",
+                                                "type": "object",
+                                                "required": [
+                                                  "lane",
+                                                  "type"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "lane": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "type": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "fight",
+                                                      "elite",
+                                                      "boss",
+                                                      "treasure",
+                                                      "rest",
+                                                      "event",
+                                                      "shop"
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "description": "The rooms taken, from floor 1."
+                                            },
+                                            "heroes": {
+                                              "type": "array",
+                                              "items": {
+                                                "type": "object",
+                                                "required": [
+                                                  "seat",
+                                                  "classId",
+                                                  "hp",
+                                                  "maxHp",
+                                                  "artifacts",
+                                                  "damage",
+                                                  "bestVisit",
+                                                  "healed",
+                                                  "blocked",
+                                                  "bestDart",
+                                                  "damageByFloor"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "seat": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "classId": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "string"
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "hp": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "maxHp": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "artifacts": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "string"
+                                                    }
+                                                  },
+                                                  "damage": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "bestVisit": {
+                                                    "type": "integer",
+                                                    "minimum": 0
+                                                  },
+                                                  "healed": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "description": "HP their effects and their rest restored, across the party."
+                                                  },
+                                                  "blocked": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "description": "Block their effects gave, across the party."
+                                                  },
+                                                  "bestDart": {
+                                                    "anyOf": [
+                                                      {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "number",
+                                                          "ring",
+                                                          "damage"
+                                                        ],
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "number": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          },
+                                                          "ring": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "single",
+                                                              "double",
+                                                              "treble",
+                                                              "bull",
+                                                              "bullseye",
+                                                              "miss"
+                                                            ]
+                                                          },
+                                                          "damage": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          }
+                                                        }
+                                                      },
+                                                      {
+                                                        "type": "null"
+                                                      }
+                                                    ]
+                                                  },
+                                                  "damageByFloor": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "description": "From floor 1."
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            "best": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "required": [
+                                                    "seat",
+                                                    "darts",
+                                                    "damage",
+                                                    "enemy"
+                                                  ],
+                                                  "additionalProperties": false,
+                                                  "properties": {
+                                                    "seat": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "darts": {
+                                                      "type": "array",
+                                                      "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                          "number",
+                                                          "ring"
+                                                        ],
+                                                        "additionalProperties": false,
+                                                        "properties": {
+                                                          "number": {
+                                                            "type": "integer",
+                                                            "minimum": 0
+                                                          },
+                                                          "ring": {
+                                                            "type": "string",
+                                                            "enum": [
+                                                              "single",
+                                                              "double",
+                                                              "treble",
+                                                              "bull",
+                                                              "bullseye",
+                                                              "miss"
+                                                            ]
+                                                          }
+                                                        }
+                                                      }
+                                                    },
+                                                    "damage": {
+                                                      "type": "integer",
+                                                      "minimum": 0
+                                                    },
+                                                    "enemy": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  }
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ],
+                                              "description": "The run's best visit."
+                                            }
+                                          },
+                                          "description": "A Dungeon run's summary: the end screen and the details page (shared/dungeon/summary.ts)."
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ],
+                                      "description": "Set once the run is over."
                                     }
                                   }
                                 }

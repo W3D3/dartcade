@@ -48,7 +48,8 @@ export type Trace = {
 }
 
 export type VisitInput = { seat: number; visit: readonly Hit[]; heroes: Hero[]; enemies: Enemy[]; items: PlacedItem[]; gold: number }
-export type VisitResult = { trace: Trace; heroes: Hero[]; enemies: Enemy[]; gold: number }
+/** `healed` and `blocked`: the HP the thrower's effects restored and the block they gave, across the party. */
+export type VisitResult = { trace: Trace; heroes: Hero[]; enemies: Enemy[]; gold: number; healed: number; blocked: number }
 
 type Source = { source: TraceSource; id: string; entry: ContentEntry }
 
@@ -70,6 +71,8 @@ export function resolveVisit(input: VisitInput): VisitResult {
   const hero = heroes.find(h => h.seat === input.seat)
   if (!hero) throw new Error(`no hero in seat ${input.seat}`)
   let gold = input.gold
+  let healed = 0
+  let blocked = 0
   const before = enemies.map(e => ({ uid: e.uid, hpBefore: e.hp }))
   const front = () => enemies.find(alive) ?? null
   const targetHp = front()?.hp ?? 0
@@ -83,10 +86,17 @@ export function resolveVisit(input: VisitInput): VisitResult {
   const applySide = (e: Effect, target: Enemy | null): Enemy | null => {
     switch (e.effect) {
       case 'block':
-        for (const h of e.party ? heroes.filter(alive) : [hero]) h.block += e.value
+        for (const h of e.party ? heroes.filter(alive) : [hero]) {
+          h.block += e.value
+          blocked += e.value
+        }
         return null
       case 'heal':
-        for (const h of e.party ? heroes.filter(alive) : [hero]) h.hp = Math.min(h.maxHp, h.hp + e.value)
+        for (const h of e.party ? heroes.filter(alive) : [hero]) {
+          const hp = Math.min(h.maxHp, h.hp + e.value)
+          healed += hp - h.hp
+          h.hp = hp
+        }
         return null
       case 'gold':
         gold += e.value
@@ -162,5 +172,5 @@ export function resolveVisit(input: VisitInput): VisitResult {
   const summary = before.map((b, i) => ({ ...b, hpAfter: enemies[i].hp }))
   const extra = [...darts.flatMap(d => d.steps), ...afterVisit].filter(st => st.effect === 'damage' && st.target !== null)
   const total = darts.reduce((n, d) => n + d.damage, 0) + extra.reduce((n, st) => n + st.value, 0)
-  return { trace: { seat: input.seat, darts, afterVisit, total, targetHp, enemies: summary }, heroes, enemies, gold }
+  return { trace: { seat: input.seat, darts, afterVisit, total, targetHp, enemies: summary }, heroes, enemies, gold, healed, blocked }
 }

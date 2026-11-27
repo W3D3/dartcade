@@ -33,8 +33,9 @@ export const DUNGEON_RULES = {
   offerSize: 3,
   /** How much Chill cuts an enemy's attack. */
   chill: 0.25,
-  /** The map generator: weights of the room types on a regular floor. */
+  /** The map generator: lanes across, the weights of the room types on a regular floor. */
   map: {
+    lanes: 5,
     weights: { fight: 6, elite: 2, treasure: 2, rest: 2, event: 2, shop: 0 } satisfies Record<Exclude<RoomType, 'boss'>, number>,
     /** The first floor an elite may stand on. */
     eliteFrom: 3,

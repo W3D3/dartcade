@@ -4,13 +4,13 @@
 // the generator position stored in `rng`.
 import { ARTIFACT_IDS, type ArtifactId } from './content/artifacts.js'
 import { CLASSES, isClassId, modifiersOf } from './content/classes.js'
-import { ENEMIES } from './content/enemies.js'
+import { ENEMIES, type EnemyId } from './content/enemies.js'
 import { EVENTS, EVENT_IDS, type EventId, type Outcome } from './content/events.js'
 import { encounterPool, isBattleRoom, type BattleRoom } from './content/rooms.js'
 import { enemyTurn, type EnemyTurnLog } from './enemyTurn.js'
-import { sideOf, type Hit, type Side } from './hit.js'
-import { generateMap, tally, type DungeonMap } from './map.js'
-import { resolveVisit, type Trace } from './resolve.js'
+import { sideOf, type Hit, type Ring, type Side } from './hit.js'
+import { generateMap, roomsAbove, tally, type DungeonMap, type MapRoom } from './map.js'
+import { resolveVisit, type Trace, type TraceDart, type VisitResult } from './resolve.js'
 import { enemyHp, rulesOf, type DungeonConfig } from './rules.js'
 import { alive, type Enemy, type Hero, type PlacedItem } from './state.js'
 import { drawFrom, pick, type Rng } from '../rng.js'
@@ -36,6 +36,22 @@ export type Scene =
 
 export type Phase = Scene['phase']
 
+/** A hero's numbers for the run summary. */
+export type SeatStats = {
+  damage: number
+  bestVisit: number
+  /** HP their effects (and their rest) restored, across the party. */
+  healed: number
+  /** Block their effects gave, across the party. */
+  blocked: number
+  bestDart: { number: number; ring: Ring; damage: number } | null
+  /** Damage per floor, from floor 1. */
+  damageByFloor: number[]
+}
+
+/** The run's best visit, for the summary. */
+export type BestVisit = { seat: number; darts: { number: number; ring: Ring }[]; damage: number; enemy: EnemyId | null }
+
 /** What the last event did, for the screen. */
 export type EventResult = { id: EventId; decision: number; items: PlacedItem[]; artifacts: { seat: number; artifact: ArtifactId }[] }
 
@@ -46,8 +62,10 @@ export type RunState = {
   map: DungeonMap
   /** The floor the party is on (1-based); 0 before the first room. */
   floor: number
-  /** Which room of that floor it is in. */
-  room: Side | null
+  /** The lane of the room the party is in; null before the first room. */
+  room: number | null
+  /** The lane of the room taken on each floor, from floor 1. */
+  path: number[]
   /** Rooms finished. */
   cleared: number
   scene: Scene
@@ -62,9 +80,8 @@ export type RunState = {
   trace: Trace | null
   lastEvent: EventResult | null
   lastHeal: { seat: number; amount: number } | null
-  /** Per seat: damage dealt in the run, the best visit's damage. */
-  damage: number[]
-  bestVisit: number[]
+  stats: SeatStats[]
+  best: BestVisit | null
 }
 
 // Runs `fn` with the state's generator; returns its result and where the generator stopped
@@ -83,21 +100,21 @@ function nextLiving(s: RunState, seat: number): { seat: number; wrapped: boolean
   return later ? { seat: later.seat, wrapped: false } : { seat: firstLiving(s), wrapped: true }
 }
 
+/** A new run in setup: the heroes pick classes, then the host starts it (`beginRun`). Difficulty and length are the lobby's config. */
 export function startRun(cfg: DungeonConfig, seats: number, seed: number): RunState {
-  const g = drawFrom(seed)
-  const map = generateMap(cfg.floors, g.rng, rulesOf(cfg))
   const startHp = rulesOf(cfg).startHp
-  const perSeat = <T>(value: T) => Array.from({ length: seats }, () => value)
+  const perSeat = <T>(value: () => T) => Array.from({ length: seats }, value)
   return {
     cfg,
-    rng: g.position(),
-    map,
+    rng: seed >>> 0,
+    map: { lanes: rulesOf(cfg).map.lanes, floors: [] },
     floor: 0,
     room: null,
+    path: [],
     cleared: 0,
     scene: { phase: 'setup' },
     turn: 0,
-    heroes: perSeat(null).map((_, seat) => ({
+    heroes: perSeat(() => null).map((_, seat) => ({
       seat,
       classId: null,
       healSegment: null,
@@ -112,12 +129,24 @@ export function startRun(cfg: DungeonConfig, seats: number, seed: number): RunSt
     trace: null,
     lastEvent: null,
     lastHeal: null,
-    damage: perSeat(0),
-    bestVisit: perSeat(0),
+    stats: perSeat(() => ({ damage: 0, bestVisit: 0, healed: 0, blocked: 0, bestDart: null, damageByFloor: [] })),
+    best: null,
   }
 }
 
-/** A hero picks a class nobody else has (again, while others still choose) and gets its starting artifact; the Healer names its number. */
+/** The host starts the run once every hero has a class: the map is drawn and the party stands below floor 1. */
+export function beginRun(s: RunState): RunState {
+  if (s.scene.phase !== 'setup' || s.heroes.some(h => h.classId === null)) return s
+  const startHp = rulesOf(s.cfg).startHp
+  const heroes = s.heroes.map(h => {
+    const maxHp = Math.round(startHp * (modifiersOf(h.classId).maxHp ?? 1))
+    return { ...h, hp: maxHp, maxHp }
+  })
+  const [map, rng] = withRng(s, r => generateMap(s.cfg.floors, r, rulesOf(s.cfg)))
+  return toMap({ ...s, rng, map, heroes })
+}
+
+/** A hero picks a class nobody else has (again, until the run starts) and gets its starting artifact; the Healer names its number. */
 export function pickClass(s: RunState, seat: number, classId: string, healSegment: number | null): RunState {
   if (s.scene.phase !== 'setup' || !s.heroes[seat] || !isClassId(classId)) return s
   const heals = classId === 'healer'
@@ -131,29 +160,21 @@ export function pickClass(s: RunState, seat: number, classId: string, healSegmen
   })
   const heroes = s.heroes.map(h => (h.seat === seat ? picked(h) : h))
   const waiting = heroes.find(h => h.classId === null)
-  if (waiting) return { ...s, heroes, turn: waiting.seat }
-  const startHp = rulesOf(s.cfg).startHp
-  const ready = heroes.map(h => {
-    const maxHp = Math.round(startHp * (modifiersOf(h.classId).maxHp ?? 1))
-    return { ...h, hp: maxHp, maxHp }
-  })
-  return toMap({ ...s, heroes: ready })
+  return { ...s, heroes, turn: waiting?.seat ?? s.turn }
 }
 
-// To the map: the boss floor (one room) is entered without a vote
+// To the map: with only one way up (floor 1, the boss, a room on the edge) the party goes there without a vote
 function toMap(s: RunState): RunState {
   const base: RunState = { ...s, scene: { phase: 'map', votes: s.heroes.map(() => null) }, turn: firstLiving(s), visit: [] }
-  const next = s.map.floors.at(s.floor)
-  return next?.length === 1 ? enterRoom(base, next[0].side) : base
+  const ways = Object.values(roomsAbove(s.map, s.floor, s.room))
+  return ways.length === 1 ? enterRoom(base, ways[0]) : base
 }
 
 const finishRoom = (s: RunState): RunState => toMap({ ...s, cleared: s.cleared + 1 })
 
-function enterRoom(s: RunState, side: Side): RunState {
+function enterRoom(s: RunState, room: MapRoom): RunState {
   const floor = s.floor + 1
-  const room = s.map.floors.at(floor - 1)?.find(r => r.side === side)
-  if (!room) return s
-  const at: RunState = { ...s, floor, room: side, turn: firstLiving(s), visit: [], lastHeal: null }
+  const at: RunState = { ...s, floor, room: room.lane, path: [...s.path, room.lane], turn: firstLiving(s), visit: [], lastHeal: null }
   const type = room.type
   if (isBattleRoom(type)) {
     const [kinds, rng] = withRng(at, r => {
@@ -237,13 +258,35 @@ function resolve(s: RunState, battle: Battle): RunState {
     heroes: r.heroes,
     gold: r.gold,
     trace: r.trace,
-    damage: s.damage.map((d, i) => (i === s.turn ? d + r.trace.total : d)),
-    bestVisit: s.bestVisit.map((b, i) => (i === s.turn ? Math.max(b, r.trace.total) : b)),
+    stats: s.stats.map((st, i) => (i === s.turn ? credit(st, r, s.floor) : st)),
+    best: r.trace.total > (s.best?.damage ?? 0) ? bestOf(r.trace, battle) : s.best,
     scene: { phase: 'battle', battle: { ...battle, enemies: r.enemies, resolved: true } },
   }
   // The boss's death ends the run at once: the deciding visit waits for Finish, not the takeout
   return battle.room === 'boss' && !r.enemies.some(alive) ? winFight(resolved, 'boss') : resolved
 }
+
+// The thrower's stats after a resolved visit
+function credit(st: SeatStats, r: VisitResult, floor: number): SeatStats {
+  const top = r.trace.darts.reduce<TraceDart | null>((best, d) => (d.damage > (best?.damage ?? 0) ? d : best), null)
+  const byFloor = Array.from({ length: Math.max(st.damageByFloor.length, floor) }, (_, i) => st.damageByFloor[i] ?? 0)
+  byFloor[floor - 1] += r.trace.total
+  return {
+    damage: st.damage + r.trace.total,
+    bestVisit: Math.max(st.bestVisit, r.trace.total),
+    healed: st.healed + r.healed,
+    blocked: st.blocked + r.blocked,
+    bestDart: top && top.damage > (st.bestDart?.damage ?? 0) ? { number: top.number, ring: top.ring, damage: top.damage } : st.bestDart,
+    damageByFloor: byFloor,
+  }
+}
+
+const bestOf = (trace: Trace, battle: Battle): BestVisit => ({
+  seat: trace.seat,
+  darts: trace.darts.map(d => ({ number: d.number, ring: d.ring })),
+  damage: trace.total,
+  enemy: battle.enemies.find(e => e.uid === trace.darts[0]?.target)?.kind ?? null,
+})
 
 /** The open visit ends (the takeout, or Next). */
 export function endVisit(s: RunState): RunState {
@@ -260,7 +303,8 @@ export function endVisit(s: RunState): RunState {
           r,
         ),
       )
-      return enterRoom({ ...done, rng }, side)
+      const room = roomsAbove(s.map, s.floor, s.room)[side]
+      return room ? enterRoom({ ...done, rng }, room) : done
     }
     case 'rest': {
       const hero = s.heroes[s.turn]
@@ -269,7 +313,8 @@ export function endVisit(s: RunState): RunState {
         s.visit.reduce((n, h) => n + h.score, 0),
       )
       const heroes = s.heroes.map(h => (h.seat === s.turn ? { ...h, hp: h.hp + amount } : h))
-      const rested: RunState = { ...done, heroes, lastHeal: { seat: s.turn, amount } }
+      const stats = s.stats.map((st, i) => (i === s.turn ? { ...st, healed: st.healed + amount } : st))
+      const rested: RunState = { ...done, heroes, stats, lastHeal: { seat: s.turn, amount } }
       const next = nextLiving(rested, s.turn)
       return next.wrapped ? finishRoom(rested) : { ...rested, turn: next.seat }
     }
