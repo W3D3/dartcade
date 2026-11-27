@@ -14,19 +14,35 @@ import {
   userId,
   type View,
 } from './helpers.js'
+import { MISSIONS } from './missionFixtures.js'
 
 // Missions part 2: the list, its dialogs, the play screen and the result; docs/missions/<scene>-<size>.png.
-// The list is answered here (the artboards' authors and bests on the real official missions); the games
-// are real, entered by hand.
+// The list is answered here (the artboards' authors and bests, on the definitions in missionFixtures.ts:
+// no mission ships in code); the games are real, entered by hand, on a mission the scene makes.
 
 type Card = { id: string; mission: { name: string; difficulty: string }; [k: string]: unknown }
 const best = (timeMs: number, darts = 40) => ({ userId: 'u-best', name: 'Lena', timeMs, darts, achievedAt: '2026-11-20T19:00:00.000Z' })
 
-// The artboard's six cards, from the official missions' definitions
+// The artboard's six cards
 async function artboardCards(page: Page): Promise<Card[]> {
   const me = await userId(page)
-  const { missions } = (await api(page).get('/api/missions')) as { missions: Card[] }
-  const by = (name: string) => missions.find(m => m.mission.name === name)!
+  const by = (name: string): Card => {
+    const mission = MISSIONS.find(m => m.name === name) as Card['mission']
+    return {
+      id: `official-${name}`,
+      mission,
+      visibility: 'public',
+      official: true,
+      author: null,
+      plays: 12,
+      yourBest: null,
+      friendsBest: null,
+      hidden: null,
+      canEdit: false,
+      createdAt: '2026-11-20T10:00:00.000Z',
+      updatedAt: '2026-11-20T10:00:00.000Z',
+    }
+  }
   const author = (id: string, name: string) => ({ official: false, author: { id, name }, visibility: 'public' })
   return [
     { ...by('Tungsten Gauntlet'), ...author(me, 'Admin'), id: 'm-tungsten', canEdit: true, yourBest: null, friendsBest: null },
@@ -141,6 +157,13 @@ test('the missions list: filtered, empty, the dialogs', async ({ browser }) => {
   await page.getByRole('button', { name: 'More for Tungsten Gauntlet' }).click()
   await expect(page.getByRole('menuitem', { name: 'Delete' })).toBeVisible()
   await shot(page, 'missions/owner-menu-desktop.png')
+  await page.keyboard.press('Escape')
+
+  // A fresh install has no missions
+  await mockList(page, [])
+  await page.reload()
+  await expect(page.getByText('No missions yet. Build the first one.')).toBeVisible()
+  await shot(page, 'missions/list-no-missions-desktop.png')
   await ctx.close()
 })
 
@@ -158,10 +181,17 @@ async function visits(page: Page, ...vs: string[][]): Promise<void> {
   }
 }
 
+// The Tungsten Gauntlet, made through the API for the games below (a fresh install has no missions)
+async function gauntletId(page: Page): Promise<string> {
+  const mission = MISSIONS.find(m => m.name === 'Tungsten Gauntlet')
+  const { id } = (await api(page).post('/api/missions', { mission, visibility: 'private' })) as { id: string }
+  return id
+}
+
 async function soloMission(page: Page): Promise<string> {
   await endActiveGames(page)
   await leaveLobby(page)
-  const { sessionId } = (await api(page).post('/api/missions/official-tungsten-gauntlet/start', {})) as { sessionId: string }
+  const { sessionId } = (await api(page).post(`/api/missions/${await gauntletId(page)}/start`, {})) as { sessionId: string }
   await openHash(page, `/session/${sessionId}`)
   return sessionId
 }
@@ -213,7 +243,7 @@ test('the play screen with three players', async ({ browser }) => {
   const lobby = await hostLobby(page, 'Friday darts')
   await addGuest(page, lobby, 'Lena')
   await addGuest(page, lobby, 'Max')
-  const { sessionId } = (await api(page).post('/api/missions/official-tungsten-gauntlet/start', { lobbyId: lobby.id, force: true })) as {
+  const { sessionId } = (await api(page).post(`/api/missions/${await gauntletId(page)}/start`, { lobbyId: lobby.id, force: true })) as {
     sessionId: string
   }
   await openHash(page, `/session/${sessionId}`)

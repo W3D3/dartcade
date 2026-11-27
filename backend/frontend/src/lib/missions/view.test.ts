@@ -119,6 +119,7 @@ describe('the list', () => {
   })
 
   it('an empty tab says why, the difficulty first', () => {
+    expect(emptyLine('all', null)).toBe('No missions yet. Build the first one.')
     expect(emptyLine('completed', null)).toMatch(/haven't completed/)
     expect(emptyLine('mine', 'expert')).toMatch(/No expert missions/)
   })

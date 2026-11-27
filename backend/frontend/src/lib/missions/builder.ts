@@ -30,7 +30,7 @@ export type BuilderForm = Omit<Mission, 'steps' | 'timeLimit'> & {
   customMinutes: number
   customSeconds: number
   visibility: MissionVisibility
-  /** An official mission ("by Dartcade"): made by an admin, always everyone's. */
+  /** An official mission ("by Dartcade"): set by an admin, always everyone's. */
   official: boolean
 }
 
@@ -396,17 +396,27 @@ export type SaveResult = { ok: MissionCard } | { error: string; fields: FieldErr
 
 const SERVER_PATH = /^body\/mission\/?/
 
-/** Creates the mission (an official one for an admin who ticked it) or saves the one being edited. */
-export async function saveMission(form: BuilderForm, id: string | null): Promise<SaveResult> {
+/**
+ * Creates the mission (an official one for an admin who ticked it) or saves the one being edited;
+ * `wasOfficial` is how the edited mission started, and only a change of it sends `official` (admins only).
+ */
+export async function saveMission(form: BuilderForm, id: string | null, wasOfficial = false): Promise<SaveResult> {
   const mission = toMission(form)
   const res = id
-    ? await api.PUT('/api/missions/{id}', { params: { path: { id } }, body: { mission, visibility: form.visibility } })
-    : form.official
-      ? await api.POST('/api/admin/missions', { body: { mission } })
-      : await api.POST('/api/missions', { body: { mission, visibility: form.visibility } })
+    ? await api.PUT('/api/missions/{id}', {
+        params: { path: { id } },
+        body: { mission, visibility: form.visibility, ...(form.official !== wasOfficial && { official: form.official }) },
+      })
+    : await api.POST('/api/missions', { body: { mission, visibility: form.visibility, ...(form.official && { official: true }) } })
   if (res.data) return { ok: res.data }
   const status = res.response.status
-  if (status === 409) return { error: 'You have made as many missions as one player can. Delete one to make another.', fields: new Map() }
+  if (status === 409) {
+    const error =
+      res.error.error === 'hidden'
+        ? 'A moderator hid this mission. It has to be restored before it can be made official.'
+        : 'You have made as many missions as one player can. Delete one to make another.'
+    return { error, fields: new Map() }
+  }
   const details = res.error.details ?? []
   const fields: FieldErrors = new Map(
     details.filter(d => SERVER_PATH.test(d.path)).map(d => [d.path.replace(SERVER_PATH, '').replaceAll('/', '.'), sentence(d.message)]),

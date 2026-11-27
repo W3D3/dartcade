@@ -133,12 +133,11 @@ All routes need a signed-in user, and answer 404 while `missions.enabled` is off
 | `GET /api/missions?filter=&difficulty=`         | anyone                       | cards: all, mine, friends, popular (by plays), completed                                              |
 | `POST /api/missions`                            | anyone                       | make a mission, at most 50 per player                                                                 |
 | `GET /api/missions/{id}`                        | who may see it               | one card                                                                                              |
-| `PUT /api/missions/{id}`                        | the author; official: admins | change the definition and the visibility                                                              |
+| `PUT /api/missions/{id}`                        | the author; official: admins | change the definition and the visibility; `official` (admins only) makes it official or takes it back |
 | `DELETE /api/missions/{id}`                     | the author; official: admins | delete it with its bests and reports                                                                  |
 | `GET /api/missions/{id}/highscores`             | who may see it               | the top 10 best runs                                                                                  |
 | `POST /api/missions/{id}/report`                | who may see it               | a public player mission, once per person                                                              |
 | `POST /api/missions/{id}/start`                 | who may see it               | start a game alone or, with `lobbyId`, for a lobby the user hosts; `test` (alone) only for the author |
-| `POST /api/admin/missions`                      | admins                       | make an official mission                                                                              |
 | `GET /api/admin/missions/reports`               | moderators                   | reported and hidden missions                                                                          |
 | `POST /api/admin/missions/{id}/hide`            | moderators                   | hide a player's mission, with a reason its author sees                                                |
 | `POST /api/admin/missions/{id}/restore`         | moderators                   | show it again                                                                                         |
@@ -163,8 +162,11 @@ Migration `078_missions.sql`:
 - `mission_reports`: like `minigolf_course_reports`
 - an index on the games' `config ->> 'missionId'`, for the plays
 
-The official missions from the artboards are `OFFICIAL_MISSIONS` in `shared/missions/official.ts`.
-Startup seeds the ones that are missing, so an admin's edits stay.
+No mission ships in code: a fresh install starts with none, and the list's empty state invites to build
+the first. An admin makes a mission official with the switch in the builder's Rules & sharing (on a new
+mission or on an edit, either way: `official` on `POST`/`PUT /api/missions`, admins only, 403 for anyone
+else). Official means owner null and public; turning it off makes it the admin's own again. Both write an
+`admin_audit` row. Admins edit and delete official missions like their own, and nothing re-creates a deleted one.
 
 ## What parts 2 and 3 need
 
