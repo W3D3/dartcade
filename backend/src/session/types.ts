@@ -219,7 +219,9 @@ export interface GameModule<
    * the input applies, until the game is decided. Logged inputs keep their time, so a replay gives
    * the same state. A state this decides (time ran out) ends the game; the open visit doesn't count.
    * `current` is the state with the open visit folded in: a clock the visit already stopped (a run
-   * the deciding dart ended) must not move.
+   * the deciding dart ended) must not move. The open visit is folded with each dart's own time
+   * (refoldVisit: `current` is `s` there), so a corrected dart counts when it was thrown; a
+   * correction itself (correct_dart, undo_dart, the board's dart.corrected) takes no time.
    */
   onClock?(s: S, now: number, current: S): S
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }

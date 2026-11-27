@@ -42,4 +42,26 @@ describe('refoldVisit', () => {
     const result = refoldVisit(countModule, { count: 3 }, events)
     expect(result.count).toBe(3)
   })
+
+  it("a game that keeps time hears each dart's own time before the dart", () => {
+    type Timed = { at: number[]; now: number | null }
+    const timed: GameModule<Timed> = {
+      ...(countModule as unknown as GameModule<Timed>),
+      init: () => ({ at: [], now: null }),
+      onClock: (s, now) => ({ ...s, now }),
+      onBoardEvent: (s, e) => (e.kind === 'dart.detected' && s.now !== null ? { state: { ...s, at: [...s.at, s.now] } } : { state: s }),
+    }
+    const dart = {
+      visit_id: 'v',
+      index: 0,
+      dart: { segment: { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }, score: 1 },
+      source_seq: 1,
+    } as const
+    const events: BoardEvent[] = [
+      { kind: 'visit.opened', data: { visit_id: 'v' } },
+      { kind: 'dart.detected', data: dart },
+      { kind: 'dart.detected', data: { ...dart, index: 1 } },
+    ]
+    expect(refoldVisit(timed, { at: [], now: null }, events, [1000, 2500]).at).toEqual([1000, 2500])
+  })
 })
