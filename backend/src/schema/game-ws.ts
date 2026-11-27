@@ -861,6 +861,7 @@ export type UserAction =
   | DungeonChooseRewardAction
   | DungeonVoteAction
   | DungeonStartAction
+  | DungeonDevResolveAction
 
 /**
  * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
@@ -1896,6 +1897,12 @@ export interface DungeonVoteAction {
  */
 export interface DungeonStartAction {
   type: 'dungeon_start'
+}
+/**
+ * Dungeon, DEV until every room has its screen: the host ends the current room as if the party got through it.
+ */
+export interface DungeonDevResolveAction {
+  type: 'dungeon_dev_resolve'
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

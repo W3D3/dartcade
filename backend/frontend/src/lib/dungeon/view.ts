@@ -126,3 +126,19 @@ export function voteOf(game: Pick<DungeonGame, 'map' | 'floor' | 'room' | 'votes
 
 /** A dart on that half of the board, for hand entry: a vote without the board. */
 export const SIDE_DART = { left: 11, right: 6 } as const satisfies Record<Side, number>
+
+/** Which screen a run shows (DungeonScene.svelte picks the component). */
+export type SceneKey = 'party' | 'map' | 'battle' | 'boss' | 'treasure' | 'rest' | 'event' | 'victory' | 'defeat' | 'summary'
+
+export function sceneOf(game: Pick<DungeonGame, 'phase' | 'battle' | 'outcome'>): SceneKey {
+  switch (game.phase) {
+    case 'setup':
+      return 'party'
+    case 'battle':
+      return game.battle?.room === 'boss' ? 'boss' : 'battle'
+    case 'ended':
+      return game.outcome ?? 'summary'
+    default:
+      return game.phase
+  }
+}

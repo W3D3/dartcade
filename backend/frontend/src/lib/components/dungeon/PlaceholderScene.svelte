@@ -11,6 +11,7 @@
   let {
     snapshot,
     send,
+    host,
     viewOnly,
     canThrow,
     locked,
@@ -36,6 +37,14 @@
       Temporary screen: the battle, treasure, rest and event screens are not built yet. Fight and rest with darts (on the board, or Enter
       for the keypad, then Next player); pick treasure and vote on events with the buttons.
     </p>
+    {#if host && !viewOnly}
+      <!-- DEV until every room has its screen: walks a run to its end without playing each room -->
+      <button
+        type="button"
+        class="rounded-lg border-2 border-dashed border-dg-hp px-4 py-2 font-display font-bold uppercase text-dg-hp"
+        onclick={() => send({ type: 'dungeon_dev_resolve' })}>DEV: resolve this room</button
+      >
+    {/if}
     <p class="font-display text-lg uppercase text-text-muted">
       Dungeon · {game.phase} · floor {game.floor} of {game.floors} · {game.gold} gold
     </p>
