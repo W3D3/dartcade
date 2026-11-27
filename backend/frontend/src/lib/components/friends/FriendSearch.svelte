@@ -9,6 +9,7 @@
   import type { FriendSearchHit } from '$lib/api'
   import type { Friend, OutgoingFriendRequest } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
+  import PersonBadges from '$lib/components/PersonBadges.svelte'
   import { createToast } from '$lib/toast'
   import Toast from '$lib/components/ui/toast/toast.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -125,11 +126,12 @@
   const groupLabel = 'px-3 pt-[10px] pb-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim'
 </script>
 
-{#snippet who(id: string, name: string, avatar: Friend['avatar'], note: string, wide = false)}
+{#snippet who(id: string, name: string, avatar: Friend['avatar'], note: string, wide = false, badges?: Pick<Friend, 'country' | 'average'>)}
   <Avatar {name} face={{ avatar, userId: id }} size={40} />
   <span class="flex min-w-0 grow flex-col gap-[2px] {wide ? 'max-md:basis-[calc(100%-52px)]' : ''}">
-    <span class="flex items-baseline gap-2 text-[15px] font-semibold">
+    <span class="flex items-center gap-2 text-[15px] font-semibold">
       <span class="truncate">{name}</span><span class="font-mono text-[12px] font-normal text-text-dim truncate">{`@${name}`}</span>
+      {#if badges}<PersonBadges country={badges.country} average={badges.average} />{/if}
     </span>
     {#if note}<span class="text-[13px] text-text-muted {wide ? '' : 'truncate'}">{note}</span>{/if}
   </span>
@@ -140,7 +142,7 @@
   {@const note = [state.action === 'Accept' ? state.text : '', mutualMeta(p.mutualFriends)].filter(Boolean).join(' · ')}
   {@const wide = ['sent', 'received'].includes(stateOf(p))}
   <Combobox.Item value={`p:${p.id}`} label={query} class="{itemClass} {wide ? 'max-md:flex-wrap' : ''}">
-    {@render who(p.id, p.name, p.avatar, note, wide)}
+    {@render who(p.id, p.name, p.avatar, note, wide, p)}
     {#if state.action}
       <span
         class="shrink-0 h-11 md:h-9 min-w-[44px] px-4 max-md:ml-auto flex items-center justify-center rounded-key bg-accent text-on-accent text-[14px] font-semibold"
@@ -247,7 +249,7 @@
                 {#each matchingFriends as f (f.id)}
                   {@const line = statusLine(f)}
                   <Combobox.Item value={`f:${f.id}`} label={f.name} class={itemClass}>
-                    {@render who(f.id, f.name, f.avatar, line.text)}
+                    {@render who(f.id, f.name, f.avatar, line.text, false, f)}
                     <span class="shrink-0 flex items-center gap-[6px] text-[13px] text-text-muted"
                       ><Check size={14} strokeWidth={3} />Friends</span
                     >

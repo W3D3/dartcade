@@ -39,6 +39,21 @@ describe('FriendRow', () => {
   })
 })
 
+describe('FriendRow badges', () => {
+  const row = (friend: typeof lena & { country?: string; average?: number }) =>
+    render(FriendRow, { props: { friend, action: 'invite', busy: false, oninvite: noop, onjoin: noop, onremove: noop } }).body
+  it('shows the flag and the average class next to the name', () => {
+    const out = row({ ...lena, country: 'AT', average: 72.5 })
+    expect(out).toContain('alt="Austria"')
+    expect(out).toContain('class 70+')
+  })
+  it('draws neither without a country or an average', () => {
+    const out = row(lena)
+    expect(out).not.toContain('<img')
+    expect(out).not.toContain('X01 average')
+  })
+})
+
 describe('RequestsPanel', () => {
   it('lists requests for you and sent by you, or says there are none', () => {
     const empty = render(RequestsPanel, {
@@ -72,6 +87,41 @@ describe('RequestsPanel', () => {
     expect(out).toContain('Sent by you · 1')
     expect(out).toContain('@nina_darts')
     expect(out).toContain('Cancel')
+  })
+})
+
+describe('request rows', () => {
+  const finish = 'chrome'
+  const felix = {
+    id: 'felix',
+    name: 'Felix',
+    avatar: { kind: 'preset' as const, foreground: finish, background: finish },
+    country: 'AT',
+    average: 72.5,
+  }
+  const panel = (user: typeof felix | Omit<typeof felix, 'country' | 'average'>) =>
+    render(RequestsPanel, {
+      props: {
+        incoming: [{ id: 'f1', from: user, mutualFriends: 0, createdAt: new Date().toISOString() }],
+        outgoing: [{ id: 'f2', to: user, createdAt: new Date().toISOString() }],
+        now: new Date(),
+        emptyText: '',
+        busy: false,
+        onanswer: noop,
+        oncancel: noop,
+      },
+    }).body
+  it('shows the flag, the average class and the real picture, also on a request you sent', () => {
+    const out = panel(felix)
+    expect(out.match(/alt="Austria"/g)).toHaveLength(2)
+    expect(out.match(/aria-label="X01 average 72.5 · class 70\+"/g)).toHaveLength(2)
+    expect(out).not.toContain('border-dashed')
+  })
+  it('draws no badges without a country or an average', () => {
+    const { country: _c, average: _a, ...bare } = felix
+    const out = panel(bare)
+    expect(out).not.toContain('<img')
+    expect(out).not.toContain('X01 average')
   })
 })
 

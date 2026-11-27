@@ -9,6 +9,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import FriendMenu from './FriendMenu.svelte'
   import StatusRing from './StatusRing.svelte'
+  import PersonBadges from '$lib/components/PersonBadges.svelte'
   import { Eye } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { flag } from '$lib/flags'
@@ -43,10 +44,11 @@
     <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 grow">
-    <span class="flex items-baseline gap-2 min-w-0">
+    <span class="flex items-center gap-2 min-w-0">
       <ProfilePopover userId={friend.id} name={friend.name}>
         <span class="text-[15px] md:text-[16px] font-semibold truncate">{friend.name}</span>
       </ProfilePopover>
+      <PersonBadges country={friend.country} average={friend.average} />
       <span class="hidden md:inline font-mono text-[12px] text-text-dim truncate">{`@${friend.name}`}</span>
     </span>
     <span class="text-[12px] md:text-[13px] truncate {TONE[line.tone]}">{line.text}</span>

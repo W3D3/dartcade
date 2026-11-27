@@ -4093,6 +4093,10 @@ export interface components {
             /** @description Their handle, shown as @name */
             name: string;
             avatar: components["schemas"]["Avatar"];
+            /** @description Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none. */
+            country?: string;
+            /** @description Their X01 3-dart average over the last 30 days, as on their profile; left out without a game. */
+            average?: number;
         };
         /**
          * AvatarChoice
@@ -4192,6 +4196,10 @@ export interface components {
             id: string;
             name: string;
             avatar: components["schemas"]["Avatar"];
+            /** @description Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none. */
+            country?: string;
+            /** @description Their X01 3-dart average over the last 30 days, as on their profile; left out without a game. */
+            average?: number;
             mutualFriends: number;
             /**
              * @description friends; or an open request sent by you or received from them; or none
@@ -7751,6 +7759,10 @@ export interface components {
             invited: boolean;
             avatar: components["schemas"]["Avatar"];
             lastSeen?: components["schemas"]["LastSeen"];
+            /** @description Their country (ISO 3166-1 alpha-2), as on their profile; left out when they have none. */
+            country?: string;
+            /** @description Their X01 3-dart average over the last 30 days, as on their profile; left out without a game. */
+            average?: number;
         };
         /** IncomingFriendRequest */
         IncomingFriendRequest: {

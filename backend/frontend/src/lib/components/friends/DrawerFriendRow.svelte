@@ -7,6 +7,7 @@
   import Avatar from '$lib/components/Avatar.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import StatusRing from './StatusRing.svelte'
+  import PersonBadges from '$lib/components/PersonBadges.svelte'
   import { Eye } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { flag } from '$lib/flags'
@@ -32,9 +33,12 @@
     <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-px min-w-0 grow">
-    <ProfilePopover userId={friend.id} name={friend.name}>
-      <span class="text-[15px] font-semibold truncate {offline ? 'text-ink-2' : 'text-text'}">{friend.name}</span>
-    </ProfilePopover>
+    <span class="flex items-center gap-2 min-w-0">
+      <ProfilePopover userId={friend.id} name={friend.name}>
+        <span class="text-[15px] font-semibold truncate {offline ? 'text-ink-2' : 'text-text'}">{friend.name}</span>
+      </ProfilePopover>
+      <PersonBadges country={friend.country} average={friend.average} />
+    </span>
     <span class="text-[12px] truncate {TONE[line.tone]}">{line.text}</span>
   </span>
   {#if action === 'in-lobby'}

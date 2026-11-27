@@ -4,6 +4,7 @@
   import { X } from '@lucide/svelte'
   import type { IncomingFriendRequest } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
+  import PersonBadges from '$lib/components/PersonBadges.svelte'
   import { isPhone } from '$lib/viewport'
   import { Button } from '$lib/components/ui/button/index.js'
   import { incomingMeta } from '$lib/friends/view'
@@ -23,10 +24,11 @@
   <div class="flex items-center gap-[10px] md:gap-3 min-w-0 grow">
     <Avatar name={request.from.name} face={{ avatar: request.from.avatar, userId: request.from.id }} size={$isPhone ? 38 : 40} />
     <span class="flex flex-col gap-px md:gap-[2px] min-w-0">
-      <span class="text-[14px] md:text-[15px] font-semibold truncate"
-        >{request.from.name}
-        <span class="font-mono text-[11px] md:text-[12px] font-normal text-text-dim">{`@${request.from.name}`}</span></span
-      >
+      <span class="flex items-center gap-2 min-w-0 text-[14px] md:text-[15px] font-semibold">
+        <span class="truncate">{request.from.name}</span>
+        <PersonBadges country={request.from.country} average={request.from.average} />
+        <span class="font-mono text-[11px] md:text-[12px] font-normal text-text-dim truncate">{`@${request.from.name}`}</span>
+      </span>
       <span class="text-[11px] md:text-[13px] text-text-muted truncate">{incomingMeta(request, now)}</span>
     </span>
   </div>
