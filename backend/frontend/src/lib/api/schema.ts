@@ -3656,7 +3656,7 @@ export interface paths {
         };
         /** One mission the user may see */
         get: operations["getMission"];
-        /** Change a mission (its author; an official one, admins). A running game keeps the mission it started with */
+        /** Change a mission (its author; an official one, admins; only admins set `official`). A running game keeps the mission it started with */
         put: operations["updateMission"];
         post?: never;
         /** Delete a mission (its author; an official one, admins), with its best runs and reports */
@@ -3720,23 +3720,6 @@ export interface paths {
          * @description Alone, on the user's board (their lobby seat's, else their usual one; else entered by hand). With `lobbyId`, everyone who plays in that lobby plays it, taking turns, as the lobby's Start does (its errors too). A test run (`test`, the author only; for an official mission, admins) is played alone and counts for no times, XP, stats or history. One running game per account and per board.
          */
         post: operations["startMission"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/admin/missions": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Make an official mission ("by Dartcade"; admins only). Everyone sees it */
-        post: operations["createOfficialMission"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7481,9 +7464,8 @@ export interface components {
         MissionWrite: {
             mission: components["schemas"]["Mission"];
             visibility: components["schemas"]["MissionVisibility"];
-        };
-        OfficialMissionWrite: {
-            mission: components["schemas"]["Mission"];
+            /** @description Admins only (403 for anyone else, whatever the value). On a change true makes the mission official (by Dartcade, everyone's, no owner), false makes an official one the admin's own again with the given visibility; left out it stays as it is. On a create true makes an official mission. */
+            official?: boolean;
         };
         MissionHighscores: {
             highscores: components["schemas"]["MissionBest"][];
@@ -14128,6 +14110,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description 'limit reached': the user has made as many missions as allowed */
             409: {
@@ -14326,34 +14309,6 @@ export interface operations {
                 };
             };
             429: components["responses"]["TooManyRequests"];
-        };
-    };
-    createOfficialMission: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["OfficialMissionWrite"];
-            };
-        };
-        responses: {
-            /** @description Made */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MissionCard"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
         };
     };
     listMissionReports: {

@@ -97,7 +97,7 @@ export function emptyLine(filter: MissionFilter, difficulty: Difficulty | null):
   if (difficulty) return `No ${DIFFICULTY_LABEL[difficulty].toLowerCase()} missions here. Try another difficulty.`
   switch (filter) {
     case 'all':
-      return 'No missions yet. Make the first one.'
+      return 'No missions yet. Build the first one.'
     case 'mine':
       return "You haven't made a mission yet. New mission builds one from steps."
     case 'friends':

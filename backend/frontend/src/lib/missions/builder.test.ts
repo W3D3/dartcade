@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MissionSchema, StepSchema, type Step } from '$shared/missions/types'
-import { OFFICIAL_MISSIONS } from '$shared/missions/official'
+import { GAUNTLET as gauntlet } from '$shared/missions/fixtures'
 import { stepTitle } from '$shared/missions/describe'
 import {
   clearDraft,
@@ -30,7 +30,6 @@ import {
 const { PUT, POST } = vi.hoisted(() => ({ PUT: vi.fn(), POST: vi.fn() }))
 vi.mock('$lib/api', () => ({ api: { PUT, POST } }))
 
-const gauntlet = OFFICIAL_MISSIONS.find(m => m.id === 'official-tungsten-gauntlet')!.mission
 const form = (over: Partial<BuilderForm> = {}): BuilderForm => ({ ...fromMission(gauntlet, 'friends', false), ...over })
 
 describe('the form and the mission', () => {
@@ -215,7 +214,7 @@ describe('saving', () => {
     expect(await saveMission(form(), null)).toEqual({ ok: card })
     expect(POST).toHaveBeenLastCalledWith('/api/missions', { body: { mission: gauntlet, visibility: 'friends' } })
     await saveMission(form({ official: true }), null)
-    expect(POST).toHaveBeenLastCalledWith('/api/admin/missions', { body: { mission: gauntlet } })
+    expect(POST).toHaveBeenLastCalledWith('/api/missions', { body: { mission: gauntlet, visibility: 'friends', official: true } })
   })
 
   it('updates the mission being edited', async () => {
@@ -225,6 +224,26 @@ describe('saving', () => {
       params: { path: { id: 'm1' } },
       body: { mission: gauntlet, visibility: 'public' },
     })
+  })
+
+  it('sends official only when an edit changes it', async () => {
+    PUT.mockResolvedValue({ data: card, response: { status: 200 } })
+    const body = (official?: boolean) => ({
+      params: { path: { id: 'm1' } },
+      body: { mission: gauntlet, visibility: 'public', ...(official === undefined ? {} : { official }) },
+    })
+    await saveMission(form({ visibility: 'public', official: true }), 'm1', true)
+    expect(PUT).toHaveBeenLastCalledWith('/api/missions/{id}', body())
+    await saveMission(form({ visibility: 'public', official: true }), 'm1', false)
+    expect(PUT).toHaveBeenLastCalledWith('/api/missions/{id}', body(true))
+    await saveMission(form({ visibility: 'public', official: false }), 'm1', true)
+    expect(PUT).toHaveBeenLastCalledWith('/api/missions/{id}', body(false))
+  })
+
+  it('says a hidden mission has to be restored before it can be made official', async () => {
+    PUT.mockResolvedValue({ error: { error: 'hidden' }, response: { status: 409 } })
+    const res = await saveMission(form({ official: true }), 'm1', false)
+    expect(res).toEqual({ error: expect.stringMatching(/hid this mission.*restored/), fields: new Map() })
   })
 
   it("maps the server's field errors onto the form's paths, and says when the cap is reached", async () => {

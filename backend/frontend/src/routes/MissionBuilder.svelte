@@ -118,7 +118,11 @@
 
   const draftOf = $derived({ id, from })
   const editing = $derived(id !== null)
-  const official = $derived(editing ? !!card?.official : form.official)
+  const official = $derived(form.official)
+  // Official on an existing mission changes who it belongs to, so it asks first
+  let confirmOfficial = $state<boolean | null>(null)
+  // Re-mounts the switch when the question is cancelled, so it shows the form again
+  let switchKey = $state(0)
   const dirty = $derived(loaded && formSnapshot(form) !== baseline)
   $effect(() => {
     if (!loaded) return
@@ -139,7 +143,7 @@
   const suggested = $derived(
     valid.length > 0 ? suggestDifficulty({ steps: valid, onFail: form.onFail, timeLimit: mission.timeLimit }) : null,
   )
-  const author = $derived(editing ? (card?.author?.name ?? 'Dartcade') : ($currentUser?.name ?? 'you'))
+  const author = $derived(official ? 'Dartcade' : (card?.author?.name ?? $currentUser?.name ?? 'you'))
   const full = $derived(form.steps.length >= MISSION_LIMITS.steps)
 
   const set = <K extends keyof BuilderForm>(key: K, value: BuilderForm[K]) => {
@@ -187,7 +191,7 @@
       return null
     }
     busy = true
-    const res = await saveMission(form, id)
+    const res = await saveMission(form, id, source?.official ?? false)
     busy = false
     if ('error' in res) {
       serverErrors = res.fields
@@ -419,16 +423,21 @@
             </div>
             <span class="text-caption {form.onFail === 'restart' ? 'text-clock' : 'text-text-dim'}">{ON_FAIL_HELP[form.onFail]}</span>
             <div class="h-px bg-surface-chip"></div>
-            {#if !editing && $currentUser?.isAdmin}
-              <SwitchRow
-                id="mb-official"
-                label="Official mission"
-                help="Made by Dartcade: everyone can play it, and it shows as by Dartcade. Only admins see this."
-                checked={form.official}
-                onchange={(on: boolean) => set('official', on)}
-              />
+            {#if $currentUser?.isAdmin}
+              {#key switchKey}
+                <SwitchRow
+                  id="mb-official"
+                  label="Official mission (by Dartcade)"
+                  help="Everyone can play it and it shows as by Dartcade. Only admins see this."
+                  checked={form.official}
+                  onchange={(on: boolean) => (editing ? (confirmOfficial = on) : set('official', on))}
+                />
+              {/key}
             {/if}
-            {#if !official}
+            {#if official}
+              <Choice label="Who can play it" options={[{ value: 'public', label: 'Everyone' }]} value="public" onchange={() => {}} />
+              <span class="text-caption text-text-dim">An official mission is always everyone's. Turn Official off to choose.</span>
+            {:else}
               <Choice
                 label="Who can play it"
                 options={VISIBILITIES.map(v => ({ value: v, label: VISIBILITY_LABEL[v] }))}
@@ -474,6 +483,24 @@
     {/if}
   </main>
 </Layout>
+
+{#if confirmOfficial !== null}
+  <ConfirmModal
+    title={confirmOfficial ? 'Make this mission official?' : 'Make this mission yours again?'}
+    body={confirmOfficial
+      ? 'Everyone sees it as by Dartcade, with the official XP and achievement rules. It is no longer tied to you, and everyone can play it.'
+      : 'It becomes your own mission, and you choose who can play it. It no longer shows as by Dartcade.'}
+    confirmLabel={confirmOfficial ? 'Make official' : 'Make it mine'}
+    onconfirm={() => {
+      set('official', confirmOfficial === true)
+      confirmOfficial = null
+    }}
+    oncancel={() => {
+      confirmOfficial = null
+      switchKey++
+    }}
+  />
+{/if}
 
 {#if deleting}
   <ConfirmModal

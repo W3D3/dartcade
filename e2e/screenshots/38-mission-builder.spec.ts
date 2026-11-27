@@ -194,3 +194,27 @@ test('Test it first plays a test run, then goes back to the builder', async ({ b
   await expect(page).toHaveURL(/#\/play\/missions\/mine/)
   await ctx.close()
 })
+
+test('an admin makes a mission official in the builder', async ({ browser }) => {
+  const { ctx, page } = await open(browser, 'admin', { ...VIEW.wide, height: 1300 })
+  await endActiveGames(page)
+  await leaveLobby(page)
+  await newBuilder(page)
+  await page.getByLabel('Name', { exact: true }).fill(GAUNTLET.name)
+  await page.getByRole('textbox', { name: /Description/ }).fill(GAUNTLET.description)
+  const one = await addStep(page, /^Checkout/, 1)
+  await one.getByLabel('Start score').fill('170')
+  await one.getByLabel('Max darts').fill('8')
+  await one.getByRole('button', { name: 'Add step' }).click()
+  await page.getByRole('switch', { name: 'Official mission (by Dartcade)' }).click()
+  await expect(page.getByText("An official mission is always everyone's.")).toBeVisible()
+  await expect(radio(page, 'Who can play it', 'Everyone')).toBeVisible()
+  await expect(page.getByText('by Dartcade').first()).toBeVisible()
+  // A lobby invite toast would cover the switch
+  await page
+    .getByRole('button', { name: /^Decline/ })
+    .click({ timeout: 2000 })
+    .catch(() => {})
+  await page.screenshot({ path: docPath('missions/builder-official-desktop.png'), animations: 'disabled', caret: 'hide' })
+  await ctx.close()
+})
