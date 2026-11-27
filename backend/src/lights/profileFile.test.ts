@@ -31,7 +31,7 @@ describe('exportProfile', () => {
   })
   it('names a preset look and never writes WLED state, ids or addresses', () => {
     const presets = out.effects.flatMap(e => ('preset' in e.look ? [e.look] : []))
-    expect(presets.map(p => p.preset)).toEqual(['Matchshot', '180', 'Busted', 'Gameshot'])
+    expect(presets.map(p => p.preset)).toEqual(['Matchshot', '180', 'Busted', 'Gameshot', 'Matchshot'])
     for (const p of presets) expect(Object.keys(p)).toEqual(['preset'])
     expect(Object.keys(out).sort()).toEqual(['effects', 'format', 'name', 'seatColors', 'version'])
     expect(JSON.stringify(out)).not.toMatch(/"(id|host|mac|token|state|seg|device)/i)

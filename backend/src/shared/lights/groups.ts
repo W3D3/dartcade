@@ -17,6 +17,11 @@ export const TRIGGER_GAME: Record<TriggerKind, GameId | null> = {
   'p121.made': 'p121',
   'golf.sunk': 'minigolf',
   'hilo.lifeLost': 'hilo',
+  'dungeon.hit': 'dungeon',
+  'dungeon.kill': 'dungeon',
+  'dungeon.hurt': 'dungeon',
+  'dungeon.victory': 'dungeon',
+  'dungeon.defeat': 'dungeon',
 }
 
 /** The order of the groups in the effects list: General first, then the games. A game with no effect has no group. */

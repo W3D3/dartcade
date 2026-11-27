@@ -17,6 +17,7 @@ describe('effect groups', () => {
     const triggers = (game: (typeof GROUP_ORDER)[number]) =>
       DEFAULT_PROFILE.rules.filter(r => groupOf(r.when.trigger) === game).map(r => r.when.trigger)
     expect(triggers('minigolf')).toEqual(['golf.sunk'])
+    expect(triggers('dungeon')).toEqual(['dungeon.hit', 'dungeon.kill', 'dungeon.hurt', 'dungeon.victory', 'dungeon.defeat'])
     expect(triggers('hilo')).toEqual(['hilo.lifeLost'])
     expect(triggers('x01')).toEqual(['visit', 'visit', 'bust', 'checkout'])
     expect(triggers('cricket')).toEqual(['cricket.closed'])

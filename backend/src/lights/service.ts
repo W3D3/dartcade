@@ -103,6 +103,8 @@ function sampleTrigger(kind: TriggerKind): Trigger {
     case 'takeout.started':
     case 'takeout.finished':
     case 'calibration.finished':
+    case 'dungeon.victory':
+    case 'dungeon.defeat':
       return { kind }
     case 'visit':
       return { kind, seat: 0, total: 180 }
