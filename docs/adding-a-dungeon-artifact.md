@@ -27,7 +27,10 @@ description and a hook or a modifier, and no id is used by two kinds of content.
    },
    ```
 
-2. Add a case to `resolve.test.ts` that throws a fixed visit and checks the damage and the trace steps.
+2. Add its sprite to `SPRITES` in `backend/frontend/src/lib/dungeon/sprites.ts`: a palette and one string per
+   pixel row, each character an index into the palette and `.` transparent. Draw no outline: the screens draw
+   the rarity outline around the silhouette. The typecheck fails until the sprite is there.
+3. Add a case to `resolve.test.ts` that throws a fixed visit and checks the damage and the trace steps.
 
 A hook returns effects and never changes state. `resolveVisit` (`resolve.ts`) applies them and writes one
 trace step for each, which is what the damage popup shows. Pick the hook by when the artifact fires:
@@ -46,7 +49,7 @@ target). An effect the engine doesn't have yet is a new `EffectKind` in `content
 (then `npm run gen:api`).
 
 A lasting change that no single dart causes is a modifier (`Modifiers` in `content/types.ts`), read where
-it applies: `maxHp` when the run starts (`pickClass` in `run.ts`), `blockCarry` at the end of a round
+it applies: `maxHp` when the run starts (`beginRun` in `run.ts`), `blockCarry` at the end of a round
 (`enemyTurn.ts`).
 
 Treasure rooms offer every artifact in `ARTIFACTS`, so a new one shows up in offers at once.
@@ -61,11 +64,13 @@ on the number it sits on, before the thrower's artifacts. Items reach the board 
 ## Add a class
 
 Add an entry to `CLASSES` in `content/classes.ts` with a `startingArtifact`. Its hooks fire after the
-thrower's artifacts. No two heroes in a run may share a class.
+thrower's artifacts. No two heroes in a run may share a class. Give it a sprite (facing right) in `SPRITES` and a colour in `CLASS_COLOR`
+(`backend/frontend/src/lib/dungeon/view.ts`): its HP bar and its bars on the run summary.
 
 ## Add an enemy
 
-Add an entry to `ENEMIES` in `content/enemies.ts`, then name it in an encounter in `content/rooms.ts`:
+Add an entry to `ENEMIES` in `content/enemies.ts` and a sprite (facing right; the battle screen turns it) in
+`SPRITES`, then name it in an encounter in `content/rooms.ts`:
 
 - `hp`: base HP for one player on Medium. `enemyHp` in `rules.ts` scales it by party size and difficulty.
 - `pattern`: the intents it cycles through, one per round. An `attack` hits every living hero. `pierce`

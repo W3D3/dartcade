@@ -31,36 +31,70 @@ test('the Play page card and the setup form', async ({ browser }) => {
   }
 })
 
-test('the placeholder match screen', async ({ browser }) => {
+test('party select, then the map after the first fight', async ({ browser }) => {
   test.skip(BEFORE, 'Dungeon has no screen on main')
   for (const [view, name] of [
-    [VIEW.desktop, 'desktop'],
+    [VIEW.wide, 'desktop'],
     [VIEW.phone, 'phone'],
   ] as const) {
     const { ctx, page } = await open(browser, 'admin', view)
     const lobby = await hostLobby(page, "Admin's dungeon", DUNGEON)
     await addGuest(page, lobby, 'Lena')
     await startLobbyGame(page, lobby)
-    await expect(page.getByText(/pick a class/)).toBeVisible()
-    await shot(page, `dungeon/placeholder-setup-${name}.png`)
+    await expect(page.getByTestId('dungeon-party')).toBeVisible()
+    await page
+      .getByRole('button', { name: /^Pick for Admin/ })
+      .first()
+      .click()
+    await expect(page.getByText('Pick for Lena').first()).toBeVisible()
+    await shot(page, `dungeon/party-${name}.png`)
 
-    await page.getByRole('button', { name: 'Archer', exact: true }).click()
-    await page.getByRole('button', { name: 'Brawler', exact: true }).click()
-    // Phones show the keypad toggle as one icon button
+    await page
+      .locator('[data-class="brawler"]')
+      .getByRole('button', { name: /^Pick for/ })
+      .click()
+    await page.getByRole('button', { name: 'Start run' }).click()
     if (name === 'phone') await page.getByRole('button', { name: 'Enter darts by number' }).click()
     else await entryMode(page, 'Enter')
-    // Both heroes vote for the left room with a 19
-    for (let i = 0; i < 2; i++) {
-      await dart(page, 'S19')
-      await page.getByRole('button', { name: /Next/ }).first().click()
+    // The floor 1 fight (a placeholder until the battle screen): good darts until the map shows
+    for (let i = 0; i < 12 && !(await page.getByTestId('dungeon-map').isVisible()); i++) {
+      for (const label of ['D19', 'D19', 'D19']) if (!(await page.getByTestId('dungeon-map').isVisible())) await dart(page, label)
+      await page
+        .getByRole('button', { name: /Next|Finish/ })
+        .first()
+        .click()
+      await page.waitForTimeout(600)
     }
-    await expect(page.getByText(/· battle ·/)).toBeVisible()
-    for (const label of ['T20', 'D19', 'S5']) await dart(page, label)
-    await expect(page.getByText(/Last visit:/)).toBeVisible()
-    await shot(page, `dungeon/placeholder-battle-${name}.png`)
+    await expect(page.getByTestId('dungeon-map')).toBeVisible()
+    if (name === 'desktop') await dart(page, 'S11')
+    else await page.locator('[data-side="left"]').filter({ visible: true }).click()
+    await page.waitForTimeout(400)
+    await shot(page, `dungeon/map-${name}.png`)
 
     await endActiveGames(page)
     await leaveLobby(page)
+    await ctx.close()
+  }
+})
+
+test('the run summary on the details page', async ({ browser }) => {
+  test.skip(BEFORE, 'Dungeon has no screen on main')
+  for (const [view, name] of [
+    [VIEW.wide, 'desktop'],
+    [VIEW.phone, 'phone'],
+  ] as const) {
+    // The preview seed plays a Dungeon run (backend/src/seed/sample.ts)
+    const { ctx, page } = await open(browser, 'admin', view)
+    await endActiveGames(page)
+    await page.goto('/#/stats/history')
+    const href = await page
+      .getByRole('link', { name: /^Dungeon,.*details/ })
+      .first()
+      .getAttribute('href')
+    await page.goto(`/${href}`)
+    await expect(page.getByTestId('dungeon-summary')).toBeVisible()
+    if (name === 'phone') await page.getByTestId('dungeon-summary').scrollIntoViewIfNeeded()
+    await shot(page, `dungeon/summary-${name}.png`)
     await ctx.close()
   }
 })
