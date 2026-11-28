@@ -9,6 +9,7 @@ import {
   Palette,
   ScanEye,
   Server,
+  Skull,
   Swords,
   ToggleRight,
   Users,
@@ -37,6 +38,13 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: MapIcon,
   },
   { category: 'Labs', href: '/admin/minigolf', title: 'Minigolf bench', desc: 'Try shots and physics on any hole', icon: Flag },
+  {
+    category: 'Labs',
+    href: '/admin/dungeon',
+    title: 'Dungeon playground',
+    desc: 'Set up any situation and throw darts at the engine',
+    icon: Skull,
+  },
   { category: 'People & moderation', href: '/admin/users', title: 'Users', desc: 'Search accounts and set their role', icon: Users },
   {
     category: 'People & moderation',
