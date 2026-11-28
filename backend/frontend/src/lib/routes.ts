@@ -77,6 +77,7 @@ export const hrefs = {
   adminCosmetics: () => at('/admin/cosmetics'),
   adminCoach: () => at('/admin/coach'),
   adminMinigolf: (query?: string) => at('/admin/minigolf', query),
+  adminDungeon: () => at('/admin/dungeon'),
   adminMinigolfReports: () => at('/admin/minigolf/reports'),
   adminMinigolfCourses: () => at('/admin/minigolf/courses'),
   minigolfBrowse: () => at('/minigolf/browse'),

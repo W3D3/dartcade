@@ -58,3 +58,5 @@ export const minigolfHoleTrail = (
 ]
 
 export const minigolfBenchTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Minigolf bench' }]
+
+export const dungeonPlaygroundTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Dungeon playground' }]

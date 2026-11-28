@@ -98,6 +98,10 @@
   const loadMinigolfBench = Object.assign(() => import('./routes/MinigolfBench.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
+  // The Dungeon playground brings the whole engine and its content: only admins open it, so it loads on demand
+  const loadDungeonPlayground = Object.assign(() => import('./routes/AdminDungeon.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
   // One lazy component for every course editor route (admin and player), so picking another course keeps the page (and its lists)
   const loadMinigolfCourses = Object.assign(() => import('./routes/MinigolfCourses.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
@@ -218,6 +222,7 @@
     '/admin/cosmetics': AdminCosmetics,
     '/admin/coach': wrap({ asyncComponent: loadAdminCoach }),
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
+    '/admin/dungeon': wrap({ asyncComponent: loadDungeonPlayground }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
     '/admin/minigolf/holes/:id': wrap({ asyncComponent: loadMinigolfHoleEditor }),
