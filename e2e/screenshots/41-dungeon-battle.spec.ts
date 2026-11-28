@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { VIEW, addGuest, dart, entryMode, hostLobby, leaveLobby, endActiveGames, open, shot, startLobbyGame } from './helpers.js'
+import { VIEW, addGuest, dart, docPath, entryMode, hostLobby, leaveLobby, endActiveGames, open, shot, startLobbyGame } from './helpers.js'
 
 // Dungeon's in-run screens (behind gamemode.dungeon.enabled, on for admins): a two-hero run played
 // through from the keypad (battle, the resolved visit, the enemy turn, treasure, rest, event, the boss,
@@ -100,16 +100,14 @@ async function play(
     previous = s
     if (s === 'dungeon-map') {
       await vote(page, seen)
+    } else if (s === 'dungeon-battle' && (await page.getByTestId('dungeon-boss').isVisible())) {
+      // The boss fight opens behind its entrance until Fight
+      await once('boss-intro', 'boss-intro')
+      await page.getByRole('button', { name: 'Fight', exact: true }).click()
+      await expect(page.getByTestId('dungeon-boss')).toBeHidden()
     } else if (s === 'dungeon-battle' && aim.length === 0) {
       await press(page, 'DEV: resolve this room')
     } else if (s === 'dungeon-battle') {
-      // The boss fight opens behind its entrance until Fight
-      const intro = page.getByTestId('dungeon-boss')
-      if (await intro.isVisible()) {
-        await once('boss-intro', 'boss-intro')
-        await page.getByRole('button', { name: 'Fight', exact: true }).click()
-        await expect(intro).toBeHidden()
-      }
       const boss = await page.getByText('Boss', { exact: true }).isVisible()
       await once(boss ? 'boss' : 'battle', boss ? 'boss' : 'battle')
       for (const label of aim) await dart(page, label)
@@ -119,6 +117,12 @@ async function play(
       const still = (await screen(page)) === 'dungeon-battle'
       if (still) await expect(popup).toBeVisible()
       if (still && !boss && !seen.has('popup') && name && aim[0] !== 'MISS') {
+        // A dart's damage lands as a pixel hit on the stage: caught while it draws
+        const stage = page.getByTestId('battle-stage')
+        await stage.scrollIntoViewIfNeeded()
+        await expect(stage.locator('canvas[data-shot]')).toBeAttached()
+        await page.waitForTimeout(150)
+        await stage.screenshot({ path: docPath(`dungeon-polish/app-battle-hit-effect-${name}.png`) })
         if (name === 'desktop') await entryMode(page, 'Board')
         await popup.scrollIntoViewIfNeeded()
         await page.waitForTimeout(1500)
