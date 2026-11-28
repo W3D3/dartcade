@@ -88,6 +88,26 @@ Add an entry to `EVENTS` in `content/events.ts`: a title, a text and two to four
 and a list of outcomes (`gold`, `hp`, `artifact`, `item`). An `hp` outcome never downs a hero. The map
 generator draws events with the weight `DUNGEON_RULES.map.weights.event` in `rules.ts`.
 
+## Try it in the admin playground
+
+`#/admin/dungeon` (Admin hub, Labs, Dungeon playground) runs the same `resolveVisit` and `enemyTurn` in the
+browser with no game, board or database. Its pickers read the registries in `content/` when the page
+renders, so a new artifact, segment item, class or enemy is in the lists as soon as the entry exists: there
+is nothing to register in the playground.
+
+1. Pick a scenario or build one: heroes (class, HP, block, artifacts), enemies (HP, burn, chill), items on
+   board numbers, the round, the difficulty and the seed.
+2. Throw: click the board, or type a script such as `t20 t20 s5` or `D16, 25, miss` (`s`, `d`, `t` and a number,
+   `20x3`, `25`, `bull`, `miss`), then End visit.
+3. Read the Result panel: each dart's steps name the segment item, artifact, class or weakness that fired,
+   with the running Base x Mult, and the diff lists what the visit changed. Run enemy turn plays the round.
+4. Determinism check replays the log twice and compares the whole state, which catches a hook that reads a
+   clock or `Math.random`. Copy as a test case writes the setup and the log as a Vitest test for
+   `resolve.test.ts`, with today's result as the expectation.
+
+The page is admin only and is not behind `gamemode.dungeon.enabled` (like the minigolf bench). It never
+stores a game; presets live in the browser's local storage or as exported JSON files.
+
 ## Change a game property
 
 Every number a run plays by is in `DUNGEON_RULES` in `rules.ts`: party size, starting HP, items per
