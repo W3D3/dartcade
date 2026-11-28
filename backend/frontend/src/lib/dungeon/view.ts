@@ -45,6 +45,17 @@ export const ROOMS: Record<RoomType, RoomInfo> = {
   shop: { label: 'Shop', description: 'Not open yet: the party passes through.', icon: ShoppingBag },
 }
 
+/** A room type's icon colour on the map and its legend (the artboards'). */
+export const ROOM_TONE: Record<RoomType, string> = {
+  fight: '#b3a8c4',
+  elite: '#ff6b5e',
+  boss: '#e0463c',
+  treasure: '#b66bff',
+  rest: '#5bd37a',
+  event: '#5aa0e8',
+  shop: '#f2c14e',
+}
+
 export type Rect = { x: number; y: number; w: number; h: number; fill: string }
 
 /**

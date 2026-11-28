@@ -1,7 +1,7 @@
 <script lang="ts">
   // Party select (Dungeon-Pixel-Party): every hero picks a class nobody else has and the host starts the
   // run. Difficulty and length are the lobby's (shown here, set there), so history reads what was played. A viewer picks for their own seats, the host for any.
-  import { Check, Play } from '@lucide/svelte'
+  import { Check, Circle, CirclePlus, Play, Shield, Swords, WandSparkles } from '@lucide/svelte'
   import type { DungeonGame, UserAction } from '$lib/api/game-ws'
   import { CLASS_COLOR } from '$lib/dungeon/view'
   import { ARTIFACTS } from '$shared/dungeon/content/artifacts'
@@ -19,6 +19,11 @@
     send,
   }: { game: DungeonGame; names: string[]; mySeats: number[]; host: boolean; viewOnly: boolean; send: (a: UserAction) => void } = $props()
 
+  // The class's mark in its card's corner
+  const GLYPH = { brawler: Swords, healer: CirclePlus, archer: Circle, mage: WandSparkles, guardian: Shield } as const satisfies Record<
+    ClassId,
+    typeof Swords
+  >
   const mine = (seat: number) => !viewOnly && (host || mySeats.includes(seat))
   let picking = $state<number | null>(null)
   // Whose class a tap sets: the chosen seat, else the first of mine still picking, else my first
@@ -50,33 +55,48 @@
 <main class="flex h-full flex-col gap-4 overflow-y-auto bg-dg-bg p-4 text-dg-text md:p-5 lg:flex-row" data-testid="dungeon-party">
   <section class="flex min-w-0 flex-1 flex-col gap-3">
     <header>
-      <h2 class="font-display text-2xl font-bold uppercase text-dg-gold md:text-3xl">Choose your hero</h2>
+      <h2 class="font-display text-2xl font-bold uppercase tracking-wider text-dg-gold md:text-3xl">Choose your hero</h2>
       <p class="text-sm text-dg-muted">
         Each player picks a class. A class can only be taken once.{seat !== null && game.heroes.length > 1
           ? ` Picking for ${names[seat]}.`
           : ''}
       </p>
     </header>
-    <ul class="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:grid-cols-5">
+    <ul class="grid grid-cols-1 gap-3 p-0 sm:grid-cols-2 xl:min-h-0 xl:flex-1 xl:grid-cols-5">
       {#each CLASS_IDS as id (id)}
         {@const entry = CLASSES[id]}
         {@const owner = takenBy(id)}
         {@const hp = Math.round(DUNGEON_RULES.startHp * (modifiersOf(id).maxHp ?? 1))}
+        {@const Glyph = GLYPH[id]}
         <li
-          class="flex gap-3 rounded-xl border-2 bg-dg-panel p-3 xl:flex-col {owner !== null ? 'border-dg-gold' : 'border-dg-line'}"
+          class="flex gap-3 rounded-xl border-2 bg-dg-panel p-3 xl:flex-col xl:gap-3 xl:p-4 {owner !== null
+            ? 'border-dg-gold'
+            : 'border-dg-line'}"
           data-class={id}
         >
-          <div class="flex shrink-0 items-end justify-center rounded-lg bg-dg-bg p-2 xl:h-44">
-            <PixelSprite {id} scale={8} shadow label={entry.name} class="max-xl:hidden" />
-            <PixelSprite {id} scale={3} shadow label={entry.name} class="xl:hidden" />
-          </div>
-          <div class="flex min-w-0 flex-1 flex-col gap-1.5">
-            <div class="flex items-baseline justify-between gap-2">
-              <h3 class="font-display text-xl font-bold uppercase">{entry.name}</h3>
-              <span class="text-sm text-dg-muted">{hp} HP</span>
+          <div class="flex shrink-0 flex-col gap-3 xl:min-h-0 xl:flex-1">
+            <div class="flex items-center justify-between max-xl:hidden">
+              <h3 class="font-display text-2xl font-bold uppercase tracking-wider">{entry.name}</h3>
+              <Glyph class="size-[22px] text-dg-muted" aria-hidden="true" />
             </div>
-            <p class="text-sm"><span class="font-display font-bold uppercase text-dg-gold">Passive</span> {entry.description}</p>
-            <div class="flex items-center gap-1 text-sm text-dg-muted">
+            <div
+              class="flex shrink-0 items-end justify-center rounded-xl border border-dg-line bg-[radial-gradient(ellipse_at_50%_30%,#2d2438_0%,#1a1420_70%)] p-2 xl:min-h-[240px] xl:flex-1 xl:items-center"
+            >
+              <PixelSprite {id} scale={8} shadow label={entry.name} class="max-xl:hidden" />
+              <PixelSprite {id} scale={3} shadow label={entry.name} class="xl:hidden" />
+            </div>
+          </div>
+          <div class="flex min-w-0 flex-1 flex-col gap-2.5 xl:flex-none">
+            <div class="flex items-baseline justify-between gap-2">
+              <h3 class="font-display text-xl font-bold uppercase xl:hidden">{entry.name}</h3>
+              <span class="text-sm text-dg-muted max-xl:hidden">Hit points</span>
+              <span class="text-base xl:text-dg-text max-xl:text-sm max-xl:text-dg-muted">{hp}<span class="xl:hidden"> HP</span></span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="font-display text-xs font-bold uppercase tracking-wider text-dg-gold">Passive</span>
+              <span class="text-sm">{entry.description}</span>
+            </div>
+            <div class="flex items-center gap-2.5 text-sm text-dg-muted">
               <ArtifactIcon id={entry.startingArtifact} scale={2} />
               Starts with {ARTIFACTS[entry.startingArtifact].name}
             </div>
