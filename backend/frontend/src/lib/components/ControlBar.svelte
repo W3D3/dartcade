@@ -11,6 +11,7 @@
     onNext,
     compact = false,
     primary = false,
+    primaryTone = 'bg-accent text-accent-fg hover:bg-accent-hover',
   }: {
     canUndo: boolean
     label: string
@@ -23,6 +24,8 @@
     compact?: boolean
     /** The main action, filled in the accent colour (Minigolf's Shoot). */
     primary?: boolean
+    /** The filled main action's colours, for a screen with its own palette (Dungeon's gold). */
+    primaryTone?: string
   } = $props()
 </script>
 
@@ -44,7 +47,7 @@
     disabled={!enabled}
     class="{compact ? 'h-11' : 'h-12'} flex items-center gap-1 rounded-md cursor-pointer disabled:opacity-40 disabled:cursor-default
            {primary
-      ? 'px-6 border-0 bg-accent text-accent-fg hover:bg-accent-hover font-display font-bold text-[20px] uppercase tracking-title'
+      ? `px-6 border-0 ${primaryTone} font-display font-bold text-[20px] uppercase tracking-title`
       : prominent
         ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
         : 'px-2 border-0 bg-transparent text-text-muted text-[14px]'}"
