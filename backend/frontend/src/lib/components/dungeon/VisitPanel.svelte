@@ -3,6 +3,7 @@
   // three dart slots (tap one to correct it; the board highlights it), then Undo and Next, or whose
   // turn it is when the viewer isn't up. `damage` replaces each slot's score once the visit resolved.
   // The board is as tall as the column is wide: these screens scroll, so the column has no height of its own.
+  // `hideBoard`: the phone's battle hides it while the damage popup plays.
   import type { Snippet } from 'svelte'
   import type { DungeonGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
@@ -17,6 +18,7 @@
     damage = null,
     overlay,
     children,
+    hideBoard = false,
     keypad = false,
     canThrow,
     locked,
@@ -37,6 +39,7 @@
     overlay?: Snippet<[number]>
     /** Between the slots and the controls. */
     children?: Snippet
+    hideBoard?: boolean
   } = $props()
   let openDart = $state<number | null>(null)
 </script>
@@ -56,7 +59,7 @@
   {onDartMove}
   bind:openDart
   board={{ overlay }}
-  class="aspect-square"
+  class="aspect-square {hideBoard ? 'hidden!' : ''}"
 />
 <div class="relative">
   <DartSlots slots={dungeonSlots({ darts, damage })} onCorrect={viewOnly ? undefined : onCorrect} bind:openDart showPopover={!keypad} />

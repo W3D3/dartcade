@@ -3,7 +3,7 @@ import { VIEW, addGuest, dart, entryMode, hostLobby, leaveLobby, endActiveGames,
 
 // Dungeon's in-run screens (behind gamemode.dungeon.enabled, on for admins): a two-hero run played
 // through from the keypad (battle, the resolved visit, the enemy turn, treasure, rest, event, the boss,
-// victory), one lost run, the correction popover on the battle screen, and no sideways scrolling.
+// victory, the boss's entrance and the damage popup), one lost run, the correction popover on the battle screen, and no sideways scrolling.
 const easy = { gameId: 'dungeon', config: { difficulty: 'easy', floors: 5 } }
 const expert = { gameId: 'dungeon', config: { difficulty: 'expert', floors: 5 } }
 const SCREENS = [
@@ -16,6 +16,8 @@ const SCREENS = [
   'dungeon-map',
 ] as const
 type Screen = (typeof SCREENS)[number]
+// The screens rebuilt to the artboards: their shots sit beside the artboards in docs/dungeon-polish
+const POLISHED = new Set(['battle', 'boss', 'boss-intro', 'battle-popup-playing', 'battle-enemy-turn'])
 
 async function screen(page: Page): Promise<Screen> {
   const any = page.locator(SCREENS.map(id => `[data-testid="${id}"]`).join(','))
@@ -87,7 +89,7 @@ async function play(
   const once = async (key: string, file: string) => {
     if (seen.has(key)) return
     seen.add(key)
-    if (name) await shot(page, `dungeon/${file}-${name}.png`)
+    if (name) await shot(page, `${POLISHED.has(file) ? 'dungeon-polish/app-' : 'dungeon/'}${file}-${name}.png`)
   }
   let previous: Screen | null = null
   for (let step = 0; step < 400; step++) {
@@ -101,16 +103,32 @@ async function play(
     } else if (s === 'dungeon-battle' && aim.length === 0) {
       await press(page, 'DEV: resolve this room')
     } else if (s === 'dungeon-battle') {
+      // The boss fight opens behind its entrance until Fight
+      const intro = page.getByTestId('dungeon-boss')
+      if (await intro.isVisible()) {
+        await once('boss-intro', 'boss-intro')
+        await page.getByRole('button', { name: 'Fight', exact: true }).click()
+        await expect(intro).toBeHidden()
+      }
       const boss = await page.getByText('Boss', { exact: true }).isVisible()
       await once(boss ? 'boss' : 'battle', boss ? 'boss' : 'battle')
       for (const label of aim) await dart(page, label)
-      await expect(page.getByTestId('trace')).toBeVisible()
-      // The board view shows each dart's segment lit
-      if (!boss && !seen.has('trace') && name === 'desktop') {
-        await entryMode(page, 'Board')
-        await expect(page.getByTestId('lit-segment').first()).toBeVisible()
-        await once('trace', 'battle-trace')
-        await entryMode(page, 'Enter')
+      // The resolved visit plays as the damage popup; the board view keeps each dart's segment lit
+      // (a visit that kills the boss ends the run at once: no popup)
+      const popup = page.getByTestId('damage-popup')
+      const still = (await screen(page)) === 'dungeon-battle'
+      if (still) await expect(popup).toBeVisible()
+      if (still && !boss && !seen.has('popup') && name && aim[0] !== 'MISS') {
+        if (name === 'desktop') await entryMode(page, 'Board')
+        await popup.scrollIntoViewIfNeeded()
+        await page.waitForTimeout(1500)
+        await once('popup', 'battle-popup-playing')
+        await press(page, 'Tap anywhere to skip')
+        await popup.scrollIntoViewIfNeeded()
+        await expect(page.getByTestId('final-damage')).toHaveAttribute('data-fire', /[0-3]/)
+        if (name === 'desktop') await expect(page.getByTestId('lit-segment').first()).toBeVisible()
+        await shot(page, `dungeon-polish/app-battle-popup-${name}.png`)
+        if (name === 'desktop') await entryMode(page, 'Enter')
       }
       if ((await screen(page)) === 'dungeon-battle') await next(page)
       if ((await screen(page)) === 'dungeon-battle' && (await page.getByTestId('enemy-turn').isVisible()))
@@ -214,10 +232,10 @@ test('correcting a dart and fitting every width', async ({ browser }) => {
   await page.getByRole('button', { name: /^Dart 1: S20/ }).click()
   const popover = page.getByRole('dialog', { name: 'Correct dart 1' })
   await expect(popover).toBeVisible()
-  await shot(page, 'dungeon/battle-correction-desktop.png')
+  await shot(page, 'dungeon-polish/app-battle-correction-desktop.png')
   await popover.getByRole('button', { name: /^T20/ }).click()
   await expect(page.getByRole('button', { name: /^Dart 1: T20/ })).toBeVisible()
-  for (const width of [320, 768, 1280]) {
+  for (const width of [320, 768, 1280, 1920]) {
     await page.setViewportSize({ width, height: 800 })
     const overflow = await page.evaluate(() => {
       const main = document.querySelector('[data-testid="dungeon-battle"]')

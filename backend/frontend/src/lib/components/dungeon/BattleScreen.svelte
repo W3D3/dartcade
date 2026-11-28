@@ -1,11 +1,10 @@
 <script lang="ts">
-  // A fight, an elite or the boss (Dungeon-Pixel-Battle, -Boss, -Damage and their phone boards): the
-  // party on the left, the enemies with HP, intent and status on the right, the board in the middle
-  // with each dart's segment lit and the segment items on their numbers. Under the board the visit's
-  // darts (tap one to correct it), Undo and Next, and the log: the resolved visit as one line per dart
-  // and what the enemies did in their turn. Phones stack enemies, party, board, log.
-  // shortcut: plain cards; the animated damage popup and the artboards' exact styling come with the
-  // polish PR
+  // A fight, an elite or the boss (Dungeon-Pixel-Battle, -Boss, -Damage and their phone boards). Left:
+  // the battle stage (party against enemies), then the thrower's artifacts and the log, or, once the
+  // visit resolved, the damage popup playing its trace (the plain trace under Details, for screen
+  // readers and reduced motion). Right: the target, the board with each dart's segment lit and the
+  // segment items, the darts (tap one to correct it), Undo and Next. Phones stack it all and hide the
+  // board while the popup plays. The boss fight opens behind its entrance screen until Fight or a dart.
   import type { DungeonGame } from '$lib/api/game-ws'
   import type { MatchControls } from '$lib/components/match/types'
   import {
@@ -16,16 +15,18 @@
     fresh,
     itemSpot,
     litPath,
-    spotsText,
     toKill,
     traceLines,
   } from '$lib/dungeon/battle'
-  import { CLASS_COLOR } from '$lib/dungeon/view'
-  import { CLASSES, isClassId } from '$shared/dungeon/content/classes'
-  import { isEnemyId } from '$shared/dungeon/content/enemies'
+  import { visitTarget } from '$lib/dungeon/popup'
+  import { PopupPlayer } from '$lib/dungeon/popupPlayer.svelte'
+  import { isArtifactId } from '$shared/dungeon/content/artifacts'
   import { hitOf } from '$shared/dungeon/hit'
-  import HpBar from './HpBar.svelte'
-  import PixelSprite from './PixelSprite.svelte'
+  import { CircleDollarSign } from '@lucide/svelte'
+  import ArtifactIcon from './ArtifactIcon.svelte'
+  import BattleStage from './BattleStage.svelte'
+  import BossIntro from './BossIntro.svelte'
+  import DamagePopup from './DamagePopup.svelte'
   import VisitPanel from './VisitPanel.svelte'
 
   let {
@@ -36,7 +37,9 @@
   }: MatchControls & { game: DungeonGame; battle: NonNullable<DungeonGame['battle']>; names: string[] } = $props()
 
   const boss = $derived(battle.room === 'boss')
+  const compact = $derived(controls.layout === 'phone' || controls.layout === 'portrait')
   const thrower = $derived(names[game.currentPlayer] ?? '')
+  const hero = $derived(game.heroes[game.currentPlayer])
   // The trace is this visit's once its last dart resolved it; until then it is the one before
   const resolved = $derived(game.visitLocked && game.trace?.seat === game.currentPlayer && game.currentVisitDarts.length > 0)
   const darts = $derived(game.currentVisitDarts)
@@ -45,7 +48,31 @@
   const enemyLog = $derived(battle.lastEnemyTurn ? enemyTurnLines(battle.lastEnemyTurn, names, battle.enemies) : [])
   const kill = $derived(toKill(battle))
   const event = $derived(fresh(game.lastEvent, game))
+  const front = $derived(battle.enemies.find(e => e.uid === battle.target) ?? null)
+  const behind = $derived(battle.enemies.filter(e => e.hp > 0 && e.uid !== battle.target))
+
+  // The boss's entrance stays up until Fight or a dart, once per boss fight
+  let fought = $state<number | null>(null)
+  const intro = $derived(boss && battle.round === 1 && game.trace === null && darts.length === 0 && fought !== game.cleared)
+
+  // The popup plays the resolved visit's trace; a corrected dart or the next visit is a new trace
+  const trace = $derived(resolved ? game.trace : null)
+  const player = new PopupPlayer(() =>
+    trace
+      ? { trace, key: `${game.cleared}:${battle.round}:${trace.seat}:${trace.darts.map(d => `${d.number}${d.ring}${d.damage}`).join()}` }
+      : null,
+  )
+  const popup = $derived(player.popup)
+  const running = $derived(player.running)
+  const skip = () => player.skip()
+  // The view's target has moved on once the visit killed the front enemy: the popup and, while it
+  // plays, the stage keep the one the visit hit
+  const struck = $derived(trace ? visitTarget(trace) : null)
+  const stageFront = $derived(running && struck ? struck : battle.target)
 </script>
+
+<!-- On click, not pointerdown: skipping moves the layout, and a tap on Next must land first -->
+<svelte:window onclick={skip} onkeydown={(e: KeyboardEvent) => e.key === 'Escape' && skip()} />
 
 {#snippet overlay()}
   {#each lit as d, i (i)}
@@ -62,113 +89,120 @@
   {/each}
 {/snippet}
 
-<main class="flex h-full flex-col gap-3 overflow-y-auto bg-dg-bg p-3 text-dg-text md:p-4" data-testid="dungeon-battle">
-  <header class="flex flex-wrap items-baseline justify-between gap-2">
-    <h2 class="font-display text-xl font-bold uppercase">
-      {#if boss}<span class="mr-2 rounded-sm bg-dg-hp px-1.5 text-sm text-dg-text">Boss</span>{/if}Floor {game.floor} of {game.floors}
-    </h2>
-    <span class="font-display text-lg font-bold uppercase">Round {battle.round}</span>
-    <span class="text-dg-gold">{game.gold} gold</span>
-  </header>
+<main class="dg-theme flex h-full flex-col gap-3 overflow-y-auto bg-dg-bg p-3 text-dg-text lg:px-5 lg:py-3.5" data-testid="dungeon-battle">
+  {#if intro && front}
+    <BossIntro {game} boss={front} {names} onfight={controls.viewOnly ? null : () => (fought = game.cleared)} />
+  {:else}
+    <div class="flex min-w-0 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,860fr)_minmax(0,520fr)] lg:items-start lg:gap-5">
+      <!-- phones: the artifacts and the log go under the board (contents lets them reorder) -->
+      <div class="flex min-w-0 flex-col gap-3 max-lg:contents">
+        <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {#if boss}<span class="rounded-md bg-dg-hp px-2 font-display text-sm font-bold text-dg-text uppercase">Boss</span>{/if}
+          <span class="text-dg-muted">Floor {game.floor} of {game.floors}</span>
+          <span
+            class="inline-flex h-[34px] items-center rounded-xl border-2 border-dg-gold bg-dg-bg px-2.5 font-display text-lg font-bold tracking-wide text-dg-gold uppercase"
+          >
+            Round {battle.round}
+          </span>
+          <span class="ml-auto inline-flex items-center gap-1.5 text-lg text-dg-gold"
+            ><CircleDollarSign class="size-5" aria-hidden="true" />{game.gold}</span
+          >
+        </div>
 
-  <div class="flex min-w-0 flex-col gap-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)_minmax(0,1fr)] lg:items-start">
-    <section class="order-2 flex min-w-0 flex-col gap-2 lg:order-1" aria-label="Party">
-      {#each game.heroes as h (h.seat)}
-        <div
-          class="flex flex-col gap-1 rounded-lg border bg-dg-panel p-2 {h.seat === game.currentPlayer
-            ? 'border-dg-gold'
-            : 'border-dg-line'} {h.hp === 0 ? 'opacity-50' : ''}"
-          data-testid="hero"
-        >
-          <div class="flex items-center gap-2">
-            {#if h.classId && isClassId(h.classId)}<PixelSprite id={h.classId} scale={2} />{/if}
-            <span class="min-w-0 flex-1 truncate font-display font-bold uppercase">{names[h.seat]}</span>
-            <span class="shrink-0 text-sm">{h.hp}/{h.maxHp}</span>
-            {#if h.block}<span class="shrink-0 text-sm text-dg-block">{h.block} block</span>{/if}
+        <BattleStage
+          {game}
+          {battle}
+          {names}
+          {popup}
+          front={stageFront}
+          cue={player.cue}
+          before={trace ? Object.fromEntries(trace.enemies.map(e => [e.uid, e.hpBefore])) : null}
+          {compact}
+        />
+
+        {#if popup && trace}
+          <div class="flex flex-col gap-2">
+            <DamagePopup
+              {popup}
+              thrower={names[trace.seat] ?? ''}
+              target={enemyName(battle.enemies.find(e => e.uid === struck)?.kind ?? '')}
+              {compact}
+            />
+            {#if running}
+              <button type="button" class="self-end text-sm text-dg-muted underline-offset-2 hover:underline" onclick={skip}
+                >Tap anywhere to skip</button
+              >
+            {/if}
+            <details class="rounded-xl border border-dg-line bg-[#0e0a14] px-4 py-2 text-dg-text">
+              <summary class="cursor-pointer text-sm text-dg-muted">Details</summary>
+              <ol class="mt-1 flex flex-col gap-1 p-0" data-testid="trace">
+                {#each log as line, i (i)}<li>&gt; {line}</li>{/each}
+              </ol>
+            </details>
           </div>
-          <HpBar hp={h.hp} maxHp={h.maxHp} colour={h.classId && isClassId(h.classId) ? CLASS_COLOR[h.classId] : undefined} />
-          <span class="truncate text-xs text-dg-muted">
-            {h.classId && isClassId(h.classId) ? CLASSES[h.classId].name : ''}{h.artifacts.length
-              ? ` · ${h.artifacts.map(contentName).join(', ')}`
-              : ''}
+        {:else}
+          {#if hero.artifacts.length}
+            <div
+              class="flex flex-wrap items-center gap-x-3.5 gap-y-1 rounded-xl border border-dg-line bg-dg-panel px-3 py-2 max-lg:order-last"
+            >
+              <span class="font-display text-lg font-bold tracking-wide uppercase">{thrower}</span>
+              <span class="text-dg-muted">Artifacts</span>
+              <span class="flex flex-wrap gap-2 sm:ml-2">
+                {#each hero.artifacts.filter(isArtifactId) as a (a)}<ArtifactIcon id={a} owner={thrower} />{/each}
+              </span>
+            </div>
+          {/if}
+          <section
+            class="flex flex-col gap-1 rounded-xl border border-[#6f6285] bg-[#0e0a14] px-4 py-2.5 max-lg:order-last"
+            aria-label="Battle log"
+            role="status"
+          >
+            {#if log.length}
+              <h3 class="sr-only">Last visit</h3>
+              <ol class="flex flex-col gap-1 p-0" data-testid="trace">
+                {#each log as line, i (i)}<li>&gt; {line}</li>{/each}
+              </ol>
+            {/if}
+            {#if enemyLog.length}
+              <h3 class="sr-only">Enemy turn</h3>
+              <ol class="flex flex-col gap-1 p-0 text-dg-muted" data-testid="enemy-turn">
+                {#each enemyLog as line, i (i)}<li>&gt; {line}</li>{/each}
+              </ol>
+            {/if}
+            {#if event}
+              <h3 class="sr-only">Event</h3>
+              <ol class="flex flex-col gap-1 p-0 text-dg-muted" data-testid="event-outcome">
+                {#each eventOutcomeLines(event, names) as line, i (i)}<li>&gt; {line}</li>{/each}
+              </ol>
+            {/if}
+            <p class="text-dg-muted">&gt; Darts always hit the front enemy. When it dies, the next one steps up.</p>
+          </section>
+        {/if}
+      </div>
+
+      <section class="flex min-w-0 flex-col gap-2.5" aria-label="Visit">
+        <div class="flex flex-wrap items-baseline justify-between gap-x-2.5">
+          <span class="font-display text-xl font-bold tracking-wide text-dg-gold uppercase">
+            {front ? `Target · ${enemyName(front.kind)}` : 'No target left'}
+          </span>
+          <span class="text-sm text-dg-muted">
+            {running
+              ? 'Tap anywhere to skip'
+              : `${thrower} throws${behind.length ? ` · then the ${enemyName(behind[0]?.kind ?? '')}` : ''}`}
           </span>
         </div>
-      {/each}
-    </section>
-
-    <section class="order-3 flex min-w-0 flex-col gap-2 lg:order-2" aria-label="Visit">
-      <p class="text-center font-display text-lg font-bold uppercase">
-        {resolved ? `${thrower}: ${game.trace?.total ?? 0} damage` : `${thrower} throws`}
-      </p>
-      <VisitPanel {...controls} {darts} damage={resolved && game.trace ? game.trace.darts.map(d => d.damage) : null} {overlay}>
-        {#if !resolved && kill !== null}
-          <p class="text-center text-sm text-dg-muted">{kill} to kill the front enemy · extra is wasted</p>
-        {/if}
-      </VisitPanel>
-    </section>
-
-    <section class="order-1 flex min-w-0 flex-col gap-2 lg:order-3" aria-label="Enemies">
-      {#each battle.enemies as e (e.uid)}
-        <div
-          class="flex flex-col gap-1 rounded-lg border bg-dg-panel p-2 {e.uid === battle.target
-            ? 'border-dg-hp'
-            : 'border-dg-line'} {e.hp === 0 ? 'opacity-40' : ''}"
-          data-testid="enemy"
+        <VisitPanel
+          {...controls}
+          {darts}
+          damage={resolved && game.trace ? game.trace.darts.map(d => d.damage) : null}
+          {overlay}
+          hideBoard={running && controls.layout === 'phone'}
         >
-          <div class="flex items-center gap-2">
-            {#if isEnemyId(e.kind)}<PixelSprite id={e.kind} scale={2} flip />{/if}
-            <span class="min-w-0 flex-1 truncate font-display font-bold uppercase">
-              {enemyName(e.kind)}{#if e.uid === battle.target}<span class="ml-1 text-xs text-dg-hp">· target</span>{/if}
-            </span>
-            <span class="shrink-0 text-sm">{e.hp}/{e.maxHp}</span>
-          </div>
-          <HpBar hp={e.hp} maxHp={e.maxHp} />
-          {#if e.hp > 0}
-            <span class="text-sm">
-              Next: {e.intent.name}{e.intent.kind === 'attack'
-                ? ` · ${e.intent.value} damage${e.intent.pierce ? ', pierces block' : ''}`
-                : ''}
-              {#if e.burn}<span class="text-warn"> · Burn {e.burn}</span>{/if}
-              {#if e.chilled}<span class="text-ice"> · Chilled</span>{/if}
-            </span>
-            {#if e.weak.length || e.resist.length || e.immune.length}
-              <span class="text-xs text-dg-muted">
-                {[
-                  e.weak.length ? `Weak: ${spotsText(e.weak)}` : '',
-                  e.resist.length ? `Resists: ${spotsText(e.resist)}` : '',
-                  e.immune.length ? `Immune: ${spotsText(e.immune)}` : '',
-                ]
-                  .filter(Boolean)
-                  .join(' · ')}
-              </span>
-            {/if}
+          {#if !resolved && kill !== null}
+            <p class="text-center text-sm text-dg-muted">{kill} to kill the front enemy · extra is wasted</p>
           {/if}
-        </div>
-      {/each}
-    </section>
-  </div>
-
-  <section class="flex flex-col gap-1 rounded-lg border border-dg-line bg-dg-panel p-3 font-mono text-sm" aria-label="Battle log">
-    {#if log.length}
-      <h3 class="font-display text-sm font-bold uppercase text-dg-muted">{resolved ? 'This visit' : 'Last visit'}</h3>
-      <ol class="flex flex-col gap-0.5" data-testid="trace">
-        {#each log as line, i (i)}<li>&gt; {line}</li>{/each}
-      </ol>
-    {/if}
-    {#if enemyLog.length}
-      <h3 class="mt-1 font-display text-sm font-bold uppercase text-dg-muted">Enemy turn</h3>
-      <ol class="flex flex-col gap-0.5" data-testid="enemy-turn">
-        {#each enemyLog as line, i (i)}<li>&gt; {line}</li>{/each}
-      </ol>
-    {/if}
-    {#if event}
-      <h3 class="mt-1 font-display text-sm font-bold uppercase text-dg-muted">Event</h3>
-      <ol class="flex flex-col gap-0.5" data-testid="event-outcome">
-        {#each eventOutcomeLines(event, names) as line, i (i)}<li>&gt; {line}</li>{/each}
-      </ol>
-    {/if}
-    {#if !log.length && !enemyLog.length && !event}
-      <p class="text-dg-muted">Darts hit the front enemy. When it dies, the next one steps up.</p>
-    {/if}
-  </section>
+        </VisitPanel>
+      </section>
+    </div>
+  {/if}
 </main>

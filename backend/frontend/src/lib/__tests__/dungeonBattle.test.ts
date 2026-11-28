@@ -1,109 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { render } from 'svelte/server'
-import type { DungeonEnemy, DungeonGame } from '$lib/api/game-ws'
 import BattleScreen from '$lib/components/dungeon/BattleScreen.svelte'
 import EventScreen from '$lib/components/dungeon/EventScreen.svelte'
 import RestScreen from '$lib/components/dungeon/RestScreen.svelte'
 import RunEndScreen from '$lib/components/dungeon/RunEndScreen.svelte'
 import TreasureScreen from '$lib/components/dungeon/TreasureScreen.svelte'
 import { dungeonSlots } from '$lib/dartSlots'
-import { choosesFor, enemyTurnLines, eventOutcomeLines, fresh, litPath, traceLines } from '$lib/dungeon/battle'
-import { resolveVisit } from '$shared/dungeon/resolve'
-import type { Segment } from '$lib/api'
-import type { Enemy, Hero } from '$shared/dungeon/state'
+import { choosesFor, enemyChips, enemyTurnLines, eventOutcomeLines, fresh, litPath, traceLines } from '$lib/dungeon/battle'
 
-const names = ['Lena', 'Max']
-const hero = (seat: number, over: Partial<Hero> = {}): Hero => ({
-  seat,
-  classId: 'brawler',
-  healSegment: null,
-  hp: 70,
-  maxHp: 80,
-  block: 0,
-  artifacts: [],
-  ...over,
-})
-const slime: Enemy = { uid: 'e0', kind: 'slime', hp: 40, maxHp: 40, burn: 0, chilled: false }
-const skeleton: Enemy = { uid: 'e1', kind: 'skeleton', hp: 30, maxHp: 30, burn: 0, chilled: false }
-const view = (e: Enemy): DungeonEnemy => ({
-  ...e,
-  intent: { kind: 'attack', name: 'Slime Slam', value: 6, pierce: false },
-  weak: [{ ring: 'double' }],
-  resist: [],
-  immune: [{ number: 7 }],
-})
-const dart = (name: string, number: number, multiplier: 0 | 1 | 2 | 3, score: number): { segment: Segment; score: number } => ({
-  segment: {
-    name,
-    number,
-    multiplier,
-    bed: multiplier === 0 ? 'Outside' : multiplier === 3 ? 'Triple' : multiplier === 2 ? 'Double' : 'SingleOuter',
-  },
-  score,
-})
-
-// A real trace: S19 then D20 then a miss by a Brawler with the Whetstone Rune on 19
-const resolved = resolveVisit({
-  seat: 0,
-  visit: [
-    { number: 19, ring: 'single', score: 19 },
-    { number: 20, ring: 'double', score: 40 },
-    { number: 0, ring: 'miss', score: 0 },
-  ],
-  heroes: [hero(0), hero(1)],
-  enemies: [slime, skeleton],
-  items: [{ number: 19, item: 'whetstoneRune' }],
-  gold: 0,
-})
-
-const game = (over: Partial<DungeonGame> = {}): DungeonGame => ({
-  phase: 'battle',
-  difficulty: 'medium',
-  floors: 9,
-  floor: 2,
-  room: 0,
-  path: [0],
-  cleared: 1,
-  map: { lanes: 1, floors: [] },
-  votes: [null, null],
-  currentPlayer: 0,
-  nextPlayer: 1,
-  winner: null,
-  outcome: null,
-  visitLocked: false,
-  gold: 12,
-  heroes: [hero(0, { block: 5, artifacts: ['pinCushion'] }), hero(1)],
-  items: [{ number: 19, item: 'whetstoneRune' }],
-  battle: { room: 'fight', round: 2, target: 'e0', enemies: [view(slime), view(skeleton)], lastEnemyTurn: null },
-  trace: null,
-  offers: null,
-  event: null,
-  lastEvent: null,
-  lastHeal: null,
-  lastReward: null,
-  summary: null,
-  currentVisitDarts: [],
-  totalDarts: [0, 0],
-  totalVisits: [0, 0],
-  ...over,
-})
-
-const controls = {
-  canThrow: true,
-  locked: false,
-  canUndo: true,
-  next: { label: 'Next player', prominent: true, enabled: true },
-  onUndo: () => {},
-  onNext: () => {},
-  onBoardClick: () => {},
-  onCorrect: () => {},
-  layout: 'duel' as const,
-}
-const send = () => {}
-const fight = (g: DungeonGame) => {
-  if (!g.battle) throw new Error('not a fight')
-  return { game: g, battle: g.battle, names, ...controls }
-}
+import { controls, dart, fight, game, names, resolved, send, skeleton, slime, view } from './dungeonFixtures'
 
 describe('the battle log', () => {
   it('writes each dart with what fired, the damage and the kill, then the total', () => {
@@ -169,6 +74,24 @@ describe('board and slots', () => {
   })
 })
 
+describe('enemyChips', () => {
+  it('shows the defences in short and the statuses only while they are on', () => {
+    expect(
+      enemyChips({ ...view(skeleton), weak: [{ ring: 'double' }], immune: [{ number: 7 }, { number: 3 }] }).map(c => [c.kind, c.value]),
+    ).toEqual([
+      ['weak', 'D'],
+      ['immune', '7·3'],
+    ])
+    const hurt = enemyChips({ ...view(skeleton), weak: [], immune: [], resist: [{ ring: 'bull' }], chilled: true, burn: 10 })
+    expect(hurt.map(c => [c.kind, c.value])).toEqual([
+      ['resist', 'B'],
+      ['chill', ''],
+      ['burn', '10'],
+    ])
+    expect(hurt[2]?.title).toBe('Burn: 10 damage at the end of the round')
+  })
+})
+
 describe('BattleScreen', () => {
   it('shows whose visit it is, the enemies with intent, status and defences, and what is left to kill', () => {
     const out = render(BattleScreen, {
@@ -176,12 +99,14 @@ describe('BattleScreen', () => {
     }).body
     expect(out).toContain('Lena throws')
     expect(out).toContain('Round 2')
-    expect(out).toContain('Next: Slime Slam · 6 damage')
-    expect(out).toContain('Burn 4')
-    expect(out).toContain('Chilled')
-    expect(out).toContain('Weak: doubles · Immune: 7')
+    expect(out).toContain('Next: Slime Slam, 6 damage to every hero')
+    expect(out).toContain('Burn: 4 damage at the end of the round')
+    expect(out).toContain('Chill: its attack does 25% less')
+    expect(out).toContain('Weak: doubles (double damage)')
+    expect(out).toContain('Immune: 7 (no damage)')
     expect(out).toContain('40 to kill')
-    expect(out).toContain('5 block')
+    expect(out).toContain('Block 5')
+    expect(out).toContain('Pin Cushion, common artifact')
   })
   it('lights each thrown dart and, once resolved, lists the visit and its damage per dart', () => {
     const darts = [dart('S19', 19, 1, 19), dart('D20', 20, 2, 40), dart('Miss', 0, 0, 0)]
@@ -189,16 +114,39 @@ describe('BattleScreen', () => {
       props: { ...fight(game({ visitLocked: true, trace: resolved.trace, currentVisitDarts: darts })) },
     }).body
     expect(out.match(/data-testid="lit-segment"/g)).toHaveLength(2)
-    expect(out).toContain('This visit')
-    expect(out).toContain(`Lena: ${resolved.trace.total} damage`)
+    // The popup starts empty and plays in the browser; the plain trace is under Details from the start
+    expect(out).toContain('data-testid="damage-popup"')
+    expect(out).toContain('Lena’s visit')
+    expect(out).toContain(`Visit: ${resolved.trace.total} damage.`)
     expect(out).toContain(`${resolved.trace.darts[0].damage} dmg`)
     expect(out).not.toContain('to kill')
+  })
+  it('keeps the enemy the visit hit as the target while the popup plays, not the next one the view moved on to', () => {
+    const darts = [dart('S19', 19, 1, 19), dart('D20', 20, 2, 40), dart('Miss', 0, 0, 0)]
+    // After the kill the view's target is the skeleton; the popup starts on the slime it hit
+    const after = { ...game().battle!, target: 'e1', enemies: [{ ...view(slime), hp: 0 }, view(skeleton)] }
+    const out = render(BattleScreen, {
+      props: { ...fight(game({ visitLocked: true, trace: resolved.trace, currentVisitDarts: darts, battle: after })) },
+    }).body
+    expect(out).toContain('on Slime')
+    expect(out.match(/data-front="true"[^>]*>[\s\S]*?<span class="truncate">([^<]+)</)?.[1]).toBe('Slime')
   })
   it('marks the boss and shows the last enemy turn', () => {
     const lastEnemyTurn = { attacks: [{ uid: 'e0', name: 'Slime Slam', hits: [{ seat: 1, blocked: 0, damage: 9 }] }], burns: [] }
     const out = render(BattleScreen, { props: { ...fight(game({ battle: { ...game().battle!, room: 'boss', lastEnemyTurn } })) } }).body
     expect(out).toContain('Boss')
     expect(out).toContain('Slime uses Slime Slam: Max takes 9.')
+  })
+  it('opens the boss fight behind its entrance until the first dart', () => {
+    const boss = { ...game().battle!, room: 'boss' as const, round: 1, enemies: [{ ...view(slime), kind: 'dungeonWarden' }] }
+    const intro = render(BattleScreen, { props: { ...fight(game({ battle: boss, trace: null })) } }).body
+    expect(intro).toContain('data-testid="dungeon-boss"')
+    expect(intro).toContain('Opens with Slime Slam')
+    expect(intro).not.toContain('lit-segment')
+    const thrown = render(BattleScreen, {
+      props: { ...fight(game({ battle: boss, trace: null, currentVisitDarts: [dart('S19', 19, 1, 19)] })) },
+    }).body
+    expect(thrown).not.toContain('data-testid="dungeon-boss"')
   })
   it('hides Undo and Next on the big screen', () => {
     const out = render(BattleScreen, { props: { ...fight(game()), viewOnly: true } }).body
