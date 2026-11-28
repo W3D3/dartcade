@@ -7,7 +7,7 @@
   import type { MatchControls } from '$lib/components/match/types'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
   import { eventOutcomeLines, fresh } from '$lib/dungeon/battle'
-  import { ROOMS, SIDE_DART, voteOf, type VoteSide } from '$lib/dungeon/view'
+  import { ROOM_TONE, ROOMS, SIDE_DART, voteOf, type VoteSide } from '$lib/dungeon/view'
   import { isClassId } from '$shared/dungeon/content/classes'
   import ArtifactsPanel from './ArtifactsPanel.svelte'
   import DungeonMap from './DungeonMap.svelte'
@@ -31,6 +31,7 @@
     onDartMove,
   }: Omit<MatchControls, 'layout'> & { game: DungeonGame; names: string[] } = $props()
 
+  const LEGEND = ['fight', 'elite', 'shop', 'treasure', 'rest', 'event', 'boss'] as const
   const vote = $derived(voteOf(game))
   const canVote = $derived(!viewOnly && canThrow && !locked)
   const thrower = $derived(names[game.currentPlayer])
@@ -87,7 +88,9 @@
     <PartyPanel {game} {names} compact />
     <ArtifactsPanel {game} {names} compact />
   </div>
-  <section class="flex min-h-[420px] min-w-0 flex-1 flex-col gap-2 rounded-xl border border-dg-line bg-dg-panel p-3 md:p-4">
+  <section
+    class="flex min-h-[420px] min-w-0 flex-col max-lg:flex-none lg:flex-1 gap-2 rounded-xl border border-dg-line bg-dg-panel p-3 md:p-4"
+  >
     <span class="font-display text-sm font-bold uppercase text-dg-muted">{cleared}</span>
     <h2 class="font-display text-2xl font-bold uppercase text-dg-gold md:text-3xl">Choose your path</h2>
     {#if reward}<p class="text-dg-gold" data-testid="reward">+{reward.gold} gold from the fight</p>{/if}
@@ -96,7 +99,13 @@
         {#each eventOutcomeLines(event, names) as line, i (i)}<li>{line}</li>{/each}
       </ul>
     {/if}
-    <div class="min-h-0 flex-1 rounded-lg bg-dg-bg p-4 pl-6"><DungeonMap {game} /></div>
+    <div class="min-h-[560px] flex-1 rounded-lg border border-dg-line bg-dg-bg p-4 pl-6 md:min-h-0"><DungeonMap {game} /></div>
+    <ul class="flex flex-wrap gap-x-4 gap-y-1 p-0 text-sm text-dg-muted" aria-label="Room types">
+      {#each LEGEND as type (type)}
+        {@const Icon = ROOMS[type].icon}
+        <li class="flex items-center gap-1.5"><Icon class="size-3.5" style="color: {ROOM_TONE[type]}" />{ROOMS[type].label}</li>
+      {/each}
+    </ul>
   </section>
 
   <div class="flex shrink-0 flex-col gap-3 lg:w-[640px]">

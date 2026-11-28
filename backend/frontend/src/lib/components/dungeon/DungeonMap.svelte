@@ -2,7 +2,8 @@
   // The act's map (Dungeon-Pixel-Map): floor 1 at the bottom, the boss on top, round rooms joined by
   // paths that only go up. The path taken is gold, the ways up are dashed gold, rooms passed by fade.
   import type { DungeonGame } from '$lib/api/game-ws'
-  import { mapLayout, ROOMS, type MapNode } from '$lib/dungeon/view'
+  import { Check } from '@lucide/svelte'
+  import { mapLayout, ROOMS, ROOM_TONE, type MapNode } from '$lib/dungeon/view'
   import { isClassId } from '$shared/dungeon/content/classes'
   import PixelSprite from './PixelSprite.svelte'
 
@@ -24,26 +25,30 @@
               : 'border-dg-line bg-dg-panel text-dg-muted'
   const edgeTone = ([a, b]: [MapNode, MapNode]) =>
     (a.state === 'taken' || a.state === 'here') && (b.state === 'taken' || b.state === 'here')
-      ? { stroke: 'var(--color-dg-gold)', dash: undefined, width: 0.9 }
+      ? { stroke: 'var(--color-dg-gold)', dash: undefined, width: 6 }
       : a.state === 'here' && b.state === 'next'
-        ? { stroke: 'var(--color-dg-gold)', dash: '1.6 1.2', width: 0.9 }
-        : { stroke: 'var(--color-dg-line)', dash: '1.2 1.4', width: 0.5 }
+        ? { stroke: 'var(--color-dg-gold)', dash: '8 8', width: 6 }
+        : { stroke: 'var(--color-dg-dashed)', dash: '8 8', width: 4 }
+  // A path leaves its room and arrives at the next one upright, as the artboard draws them
+  const curve = ([a, b]: [MapNode, MapNode]) => {
+    const [x1, y1, x2, y2] = [pad(a.x), pad(a.y), pad(b.x), pad(b.y)]
+    const mid = (y1 + y2) / 2
+    return `M${x1} ${y1}C${x1} ${mid} ${x2} ${mid} ${x2} ${y2}`
+  }
 </script>
 
 <div class="relative size-full min-h-80" role="img" aria-label="Map: floor {game.floor} of {game.floors}">
   <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="absolute inset-0 size-full" aria-hidden="true">
     {#each layout.edges as e (`${e[0].floor}-${e[0].lane}-${e[1].lane}`)}
       {@const t = edgeTone(e)}
-      <line
-        x1={pad(e[0].x)}
-        y1={pad(e[0].y)}
-        x2={pad(e[1].x)}
-        y2={pad(e[1].y)}
+      <path
+        d={curve(e)}
+        fill="none"
         stroke={t.stroke}
-        stroke-width={t.width}
         stroke-dasharray={t.dash}
+        stroke-linecap="round"
         vector-effect="non-scaling-stroke"
-        style:stroke-width="{t.width * 3}px"
+        style:stroke-width="{t.width}px"
       />
     {/each}
   </svg>
@@ -55,13 +60,20 @@
   {/each}
   {#each layout.nodes as n (`${n.floor}-${n.lane}`)}
     {@const Icon = ROOMS[n.type].icon}
-    {@const size = n.type === 'boss' ? 'size-14' : 'size-10'}
+    {@const size = n.type === 'boss' ? 'size-14 md:size-[72px]' : 'size-9 md:size-12'}
     <div class="absolute flex -translate-1/2 items-center gap-2" style:left="{pad(n.x)}%" style:top="{pad(n.y)}%">
       <span
-        class="flex {size} items-center justify-center rounded-full border-2 {tone(n)}"
+        class="relative flex {size} items-center justify-center rounded-full border-2 {tone(n)}"
         title="{ROOMS[n.type].label}, floor {n.floor}"
         data-room={n.type}
-        data-state={n.state}><Icon class="size-5" /></span
+        data-state={n.state}
+        ><Icon
+          class="size-4 md:size-6"
+          style="color: {n.state === 'ahead' || n.state === 'next' ? ROOM_TONE[n.type] : undefined}"
+        />{#if n.state === 'taken'}<span
+            class="absolute -bottom-1 -right-1 flex size-5 items-center justify-center rounded-full bg-dg-gold text-dg-bg"
+            ><Check class="size-3" strokeWidth={3} /></span
+          >{/if}</span
       >
       {#if n.state === 'here'}
         <span class="absolute right-full mr-1 flex items-end">
