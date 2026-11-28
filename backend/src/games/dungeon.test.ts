@@ -172,6 +172,22 @@ describe('the view matches schema/game-ws-v1.json in every phase', () => {
           [25, 1],
         ]),
     ],
+    [
+      'the boss in its second phase',
+      (): RunState => ({
+        ...start(),
+        scene: {
+          phase: 'battle',
+          battle: {
+            room: 'boss',
+            round: 2,
+            resolved: false,
+            lastEnemyTurn: null,
+            enemies: [{ uid: 'e0', kind: 'dungeonWarden', hp: 100, maxHp: 600, burn: 0, chilled: false }],
+          },
+        },
+      }),
+    ],
     ['treasure', (): RunState => ({ ...start(), scene: { phase: 'treasure', offers: [['pinCushion', 'tinderbox', 'twinBuckler']] } })],
     ['event', (): RunState => ({ ...start(), scene: { phase: 'event', event: 'placeholderShrine', votes: [null] } })],
     ['ended', (): RunState => ({ ...start(), scene: { phase: 'ended', outcome: 'victory' } })],

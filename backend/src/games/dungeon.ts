@@ -151,6 +151,8 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
         target: battle.enemies.find(alive)?.uid ?? null,
         enemies: battle.enemies.map(e => {
           const intent = intentOf(e, battle.round)
+          // A boss phase carries its threshold (`below`): only its spots go to the view
+          const { weak, resist, immune } = defencesAt(e.kind, e.hp, e.maxHp)
           return {
             ...e,
             intent: {
@@ -159,7 +161,9 @@ export const dungeonModule: GameModule<RunState, DungeonConfig, DungeonView, 'du
               value: intentValue(e, battle.round, s.cfg.difficulty, DUNGEON_RULES),
               pierce: 'pierce' in intent && intent.pierce === true,
             },
-            ...defencesAt(e.kind, e.hp, e.maxHp),
+            weak,
+            resist,
+            immune,
           }
         }),
         lastEnemyTurn: battle.lastEnemyTurn,
