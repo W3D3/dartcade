@@ -52,6 +52,28 @@ func TestToHTTPBase(t *testing.T) {
 	}
 }
 
+func TestBackendIdentity(t *testing.T) {
+	cases := []struct {
+		a, b  string
+		equal bool
+	}{
+		// Same scheme, host and path: same backend, even with a differing query.
+		{"wss://play.dartca.de/bridge", "wss://play.dartca.de/bridge?token=abc", true},
+		// Case differences in scheme/host don't matter.
+		{"WSS://Play.Dartca.De/bridge", "wss://play.dartca.de/bridge", true},
+		// A different host is a different backend.
+		{"wss://play.dartca.de/bridge", "wss://dev.dartca.de/bridge", false},
+		// A different path (e.g. a different deployment behind the same host) too.
+		{"wss://host/bridge", "wss://host/other/bridge", false},
+	}
+	for _, tc := range cases {
+		got := backendIdentity(tc.a) == backendIdentity(tc.b)
+		if got != tc.equal {
+			t.Errorf("backendIdentity(%q) == backendIdentity(%q): got %v, want %v", tc.a, tc.b, got, tc.equal)
+		}
+	}
+}
+
 func TestConfigFilePath(t *testing.T) {
 	// An explicit directory override wins and puts bridge.toml directly in it.
 	if got, _ := configFilePath("/data"); got != filepath.Join("/data", "bridge.toml") {
@@ -71,7 +93,7 @@ func TestConfigFilePath(t *testing.T) {
 func TestPersistToken(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bridge.toml")
-	persistToken(path, "mytoken123")
+	persistToken(path, "mytoken123", "wss://play.dartca.de/bridge")
 
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -79,6 +101,9 @@ func TestPersistToken(t *testing.T) {
 	}
 	if !strings.Contains(string(data), `token = "mytoken123"`) {
 		t.Errorf("token not written, got: %s", data)
+	}
+	if !strings.Contains(string(data), `token_backend_url = "wss://play.dartca.de/bridge"`) {
+		t.Errorf("token_backend_url not written, got: %s", data)
 	}
 	info, _ := os.Stat(path)
 	if info.Mode().Perm() != 0600 {
@@ -95,7 +120,7 @@ func TestPersistToken_ReturnsErrorWhenDirUnwritable(t *testing.T) {
 	if err := os.WriteFile(blocker, []byte("x"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := persistToken(filepath.Join(blocker, "sub", "bridge.toml"), "tok"); err == nil {
+	if err := persistToken(filepath.Join(blocker, "sub", "bridge.toml"), "tok", "wss://play.dartca.de/bridge"); err == nil {
 		t.Fatal("expected an error persisting under a file, got nil")
 	}
 }
@@ -109,7 +134,7 @@ func TestPersistToken_RewritesExistingKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, tok := range []string{"first", "second"} {
-		if err := persistToken(path, tok); err != nil {
+		if err := persistToken(path, tok, "ws://localhost:3000/bridge"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -118,7 +143,7 @@ func TestPersistToken_RewritesExistingKey(t *testing.T) {
 	}
 
 	data, _ := os.ReadFile(path)
-	want := "# my board\nboard_url = \"ws://board:3180\"\ntoken = \"second\"\nbridge_id = \"br_x\"\n"
+	want := "# my board\nboard_url = \"ws://board:3180\"\ntoken = \"second\"\ntoken_backend_url = \"ws://localhost:3000/bridge\"\nbridge_id = \"br_x\"\n"
 	if string(data) != want {
 		t.Errorf("got:\n%s\nwant:\n%s", data, want)
 	}
@@ -164,6 +189,80 @@ func TestLoadConfig_DefaultsBackendURLToHosted(t *testing.T) {
 	}
 	if cfg.BackendURL != defaultBackendURL {
 		t.Errorf("got %q, want %q", cfg.BackendURL, defaultBackendURL)
+	}
+}
+
+// Pairing against one backend then pointing the bridge at another (CLI flag,
+// DARTCADE_BACKEND_URL, or a reused bridge.toml) must not send that backend
+// the other one's token — it should be dropped so pairing runs again instead
+// of the backend rejecting it with the generic "token changed" message.
+func TestLoadConfig_ClearsTokenWhenBackendURLDiffers(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bridge.toml")
+	orig := "board_url = \"ws://board:3180\"\ntoken = \"old-tok\"\ntoken_backend_url = \"wss://old.example/bridge\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadConfig(map[string]string{"backend_url": "wss://new.example/bridge"}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "" {
+		t.Errorf("expected the stale token to be dropped, got %q", cfg.Token)
+	}
+}
+
+// Same backend_url as it was paired against: the token is still good.
+func TestLoadConfig_KeepsTokenWhenBackendURLMatches(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bridge.toml")
+	orig := "board_url = \"ws://board:3180\"\ntoken = \"good-tok\"\ntoken_backend_url = \"wss://play.dartca.de/bridge\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadConfig(map[string]string{"backend_url": "wss://play.dartca.de/bridge"}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "good-tok" {
+		t.Errorf("expected the token to survive a matching backend_url, got %q", cfg.Token)
+	}
+}
+
+// A backend_url move that keeps the same scheme/host/path but changes only the
+// query (e.g. a dev-tunnel token in the URL) isn't a different backend.
+func TestLoadConfig_KeepsTokenWhenOnlyQueryDiffers(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bridge.toml")
+	orig := "board_url = \"ws://board:3180\"\ntoken = \"good-tok\"\ntoken_backend_url = \"wss://play.dartca.de/bridge?token=abc\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadConfig(map[string]string{"backend_url": "wss://play.dartca.de/bridge"}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "good-tok" {
+		t.Errorf("expected the token to survive a query-only difference, got %q", cfg.Token)
+	}
+}
+
+// An older bridge.toml, written before token_backend_url existed, has no way to
+// tell whether the token still matches — trust it rather than forcing every
+// existing install to re-pair for free on upgrade.
+func TestLoadConfig_KeepsTokenWhenNoStoredBackendURL(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bridge.toml")
+	orig := "board_url = \"ws://board:3180\"\ntoken = \"legacy-tok\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := loadConfig(map[string]string{"backend_url": "wss://new.example/bridge"}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "legacy-tok" {
+		t.Errorf("expected the token to survive with no stored token_backend_url, got %q", cfg.Token)
 	}
 }
 
