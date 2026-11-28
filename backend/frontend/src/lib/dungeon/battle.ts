@@ -164,3 +164,26 @@ export const toKill = (battle: NonNullable<DungeonGame['battle']>): number | nul
 /** A spot list as text: "doubles", "7, 3", "bull". */
 export const spotsText = (spots: DungeonEnemy['weak']): string =>
   spots.map(s => ('number' in s ? String(s.number) : s.ring === 'treble' ? 'trebles' : s.ring === 'double' ? 'doubles' : s.ring)).join(', ')
+
+/** A spot list as a chip's short value: "D", "T", "7·3", "B". */
+export const spotsShort = (spots: DungeonEnemy['weak']): string =>
+  spots
+    .map(s => ('number' in s ? String(s.number) : s.ring === 'bullseye' || s.ring === 'bull' ? 'B' : s.ring.charAt(0).toUpperCase()))
+    .join('·')
+
+export type StatusKind = 'weak' | 'resist' | 'immune' | 'chill' | 'burn'
+
+/** An enemy's defences and statuses as the plate's icon chips: a short value and the words for the tooltip. */
+export function enemyChips(e: DungeonEnemy): { kind: StatusKind; value: string; title: string }[] {
+  return [
+    ...(e.weak.length ? [{ kind: 'weak' as const, value: spotsShort(e.weak), title: `Weak: ${spotsText(e.weak)} (double damage)` }] : []),
+    ...(e.immune.length
+      ? [{ kind: 'immune' as const, value: spotsShort(e.immune), title: `Immune: ${spotsText(e.immune)} (no damage)` }]
+      : []),
+    ...(e.resist.length
+      ? [{ kind: 'resist' as const, value: spotsShort(e.resist), title: `Resists: ${spotsText(e.resist)} (half damage)` }]
+      : []),
+    ...(e.chilled ? [{ kind: 'chill' as const, value: '', title: 'Chill: its attack does 25% less' }] : []),
+    ...(e.burn ? [{ kind: 'burn' as const, value: String(e.burn), title: `Burn: ${e.burn} damage at the end of the round` }] : []),
+  ]
+}
