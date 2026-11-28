@@ -208,13 +208,14 @@ describe('BattleScreen', () => {
 
 describe('room screens', () => {
   const offers = [['pinCushion', 'twinBuckler'], ['pinCushion']]
-  it('treasure: my seat gets Take, another seat waits', () => {
+  it('treasure: my seat can take a card, another seat only shows its choice', () => {
     const out = render(TreasureScreen, {
       props: { game: game({ phase: 'treasure', battle: null, offers }), names, mySeats: [0], host: false, viewOnly: false, send },
     }).body
-    expect(out).toContain('Lena picks')
-    expect(out).toContain('Max is choosing…')
-    expect(out.match(/>Take</g)).toHaveLength(2)
+    expect(out).toContain('Choosing now: tap one')
+    expect(out).toContain('Choosing now<')
+    expect(out.match(/<button type="button" data-testid="offer"/g)).toHaveLength(2)
+    expect(out.match(/data-testid="offer"/g)).toHaveLength(3)
     expect(out).toContain('Pin Cushion')
   })
   it('rest: the hero up heals by the visit so far, capped at max HP', () => {
@@ -225,18 +226,20 @@ describe('room screens', () => {
         ...controls,
       },
     }).body
-    expect(out).toContain('Lena rests · heals 10')
-    expect(out).toContain('Max healed 7.')
+    expect(out).toContain('Lena throws · Heal')
+    expect(out).toContain('+10')
+    expect(out).toContain('Healed +7 HP')
   })
-  it('event: the text, the decisions with their voters, and Vote for my seat that has not voted', () => {
+  it('event: the text, the decisions with their voters, and a vote for my seat that has not voted', () => {
     const g = game({ phase: 'event', battle: null, event: { id: 'placeholderShrine', votes: [null, 2] } })
     const out = render(EventScreen, { props: { game: g, names, mySeats: [0], host: false, viewOnly: false, send } }).body
     expect(out).toContain('A cracked shrine hums')
-    expect(out).toContain('1 of 2 voted · Lena votes')
-    expect(out.match(/>Vote</g)).toHaveLength(3)
+    expect(out).toContain('1 of 2 voted')
+    expect(out).toContain('Lena votes')
+    expect(out.match(/<button[^>]*disabled/g)).toBeNull()
     const watching = render(EventScreen, { props: { game: g, names, mySeats: [], host: false, viewOnly: false, send } }).body
     expect(watching).toContain('waiting for the party')
-    expect(watching).not.toContain('>Vote<')
+    expect(watching.match(/<button[^>]*disabled/g)).toHaveLength(3)
   })
   it('victory shows the deciding visit and waits for Finish', () => {
     const won = game({ phase: 'ended', outcome: 'victory', winner: 0, battle: null, trace: resolved.trace })
@@ -251,7 +254,7 @@ describe('room screens', () => {
     const out = render(RunEndScreen, {
       props: { game: game({ phase: 'ended', outcome: 'defeat', battle: null }), names, ...controls },
     }).body
-    expect(out).toContain('Defeat')
-    expect(out).toContain('The party has fallen.')
+    expect(out).toContain('Defeated')
+    expect(out).toContain('The party fell on floor')
   })
 })

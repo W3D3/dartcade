@@ -117,18 +117,18 @@ async function play(
         await once('enemy-turn', 'battle-enemy-turn')
     } else if (s === 'dungeon-treasure') {
       await once('treasure', 'treasure')
-      await press(page, 'Take')
+      await page.getByTestId('offer').first().click()
     } else if (s === 'dungeon-rest') {
       await once('rest', 'rest')
-      const resting = page.getByText(/ rests · heals/)
-      const who = ((await resting.textContent()) ?? '').split(' rests')[0]
+      const resting = page.getByText(/ throws · Heal/)
+      const who = ((await resting.textContent()) ?? '').split(' throws')[0]
       for (const label of ['S5', 'S5', 'S5']) await dart(page, label)
       await next(page)
       // Wait for the next hero (or the map): a stale rest screen would take a dart the map has no keypad for
-      await expect(page.getByText(`${who} rests`)).toBeHidden()
+      await expect(page.getByText(`${who} throws · Heal`)).toBeHidden()
     } else if (s === 'dungeon-event') {
       await once('event', 'event')
-      await press(page, 'Vote')
+      await page.getByTestId('decision').first().getByRole('button').click()
     } else {
       await next(page)
     }

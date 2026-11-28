@@ -6,7 +6,7 @@ import { HALF, R, SEGS, sectorPath, segAngle } from '$shared/board'
 import { ARTIFACTS, isArtifactId } from '$shared/dungeon/content/artifacts'
 import { CLASSES, isClassId } from '$shared/dungeon/content/classes'
 import { ENEMIES, isEnemyId } from '$shared/dungeon/content/enemies'
-import { EVENTS, isEventId } from '$shared/dungeon/content/events'
+import { EVENTS, isEventId, type Outcome } from '$shared/dungeon/content/events'
 import { SEGMENT_ITEMS, isSegmentItemId } from '$shared/dungeon/content/segmentItems'
 import type { Ring } from '$shared/dungeon/hit'
 
@@ -132,6 +132,25 @@ export function eventOutcomeLines(last: NonNullable<DungeonGame['lastEvent']>, n
     ...last.items.map(p => `${contentName(p.item)} is now on ${p.number}.`),
     ...last.artifacts.map(a => `${names[a.seat] ?? `Hero ${a.seat + 1}`} found ${contentName(a.artifact)}.`),
   ]
+}
+
+/** What an event decision does, as a line under its title. */
+export function outcomeText(outcomes: readonly Outcome[]): string {
+  if (outcomes.length === 0) return 'Nothing happens.'
+  return outcomes
+    .map(o => {
+      switch (o.kind) {
+        case 'gold':
+          return `${o.value >= 0 ? 'Gain' : 'Lose'} ${Math.abs(o.value)} gold.`
+        case 'hp':
+          return `Every hero ${o.value >= 0 ? 'heals' : 'loses'} ${Math.abs(o.value)} HP.`
+        case 'artifact':
+          return 'Every hero finds a random artifact.'
+        case 'item':
+          return `${contentName(o.item)} goes on a random number.`
+      }
+    })
+    .join(' ')
 }
 
 /** Whether this viewer may make a seat's choice (treasure pick, event vote): the host, or whoever controls the seat. */
