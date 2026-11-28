@@ -2,7 +2,7 @@
   // A Dungeon pixel sprite (lib/dungeon/sprites.ts) at `scale` screen pixels per sprite pixel. `flip`
   // turns it to face left (enemies), `outline` draws the rarity outline around its silhouette, `shadow`
   // the dithered ground shadow under a character.
-  import { SPRITES, type SpriteId } from '$lib/dungeon/sprites'
+  import { ALL_SPRITES, type SpriteId } from '$lib/dungeon/sprites'
   import { spriteRects } from '$lib/dungeon/view'
 
   let {
@@ -15,14 +15,15 @@
     class: className = '',
   }: {
     id: SpriteId
-    scale?: number
+    /** Screen pixels per sprite pixel; 'fluid' reads the CSS variable --u from an ancestor, so a screen scales its pictures per breakpoint. */
+    scale?: number | 'fluid'
     flip?: boolean
     outline?: string | null
     shadow?: boolean
     label?: string | null
     class?: string
   } = $props()
-  const sprite = $derived(SPRITES[id])
+  const sprite = $derived(ALL_SPRITES[id])
   const rects = $derived(spriteRects(sprite, outline))
   const height = $derived(sprite.h + (shadow ? 2 : 0))
   // The canvas's ground shadow: every other pixel of a flat ellipse under the feet
@@ -36,8 +37,10 @@
 </script>
 
 <svg
-  width={sprite.w * scale}
-  height={height * scale}
+  width={scale === 'fluid' ? undefined : sprite.w * scale}
+  height={scale === 'fluid' ? undefined : height * scale}
+  style:width={scale === 'fluid' ? `calc(${sprite.w} * var(--u))` : undefined}
+  style:height={scale === 'fluid' ? `calc(${height} * var(--u))` : undefined}
   viewBox="0 0 {sprite.w} {height}"
   shape-rendering="crispEdges"
   class="block shrink-0 {className}"

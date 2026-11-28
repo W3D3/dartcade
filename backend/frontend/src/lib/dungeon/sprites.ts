@@ -495,4 +495,87 @@ export const SPRITES = {
   },
 } as const satisfies Record<ClassId | EnemyId | ArtifactId, Sprite>
 
-export type SpriteId = keyof typeof SPRITES
+/** Scenery and props: the room pictures' chest, campfire, well and the Bone Lord's crown (the Dungeon-Pixel artboards). Not content, so no id lists them. */
+export const SCENERY = {
+  chest: {
+    w: 12,
+    h: 12,
+    palette: ['#f2c14e', '#fff1b0', '#ffffff', '#120c1a', '#8b5a2b'],
+    rows: [
+      '...0.1..0...',
+      '..0.121.0...',
+      '.3333333333.',
+      '344444444443',
+      '340000000043',
+      '333333333333',
+      '344440044443',
+      '344440144443',
+      '344443344443',
+      '344444444443',
+      '333333333333',
+      '............',
+    ],
+  },
+  campfire: {
+    w: 12,
+    h: 12,
+    palette: ['#e0461c', '#ff8a2a', '#ffd36a', '#fff1b0', '#5a3a1c', '#120c1a', '#8b5a2b'],
+    rows: [
+      '....0.......',
+      '....01..0...',
+      '...0110.00..',
+      '..01221010..',
+      '..01232110..',
+      '..01233210..',
+      '...012210...',
+      '....0000....',
+      '.4456666544.',
+      '466644446664',
+      '.4444444444.',
+      '............',
+    ],
+  },
+  well: {
+    w: 12,
+    h: 12,
+    palette: ['#120c1a', '#8b5a2b', '#5a3a1c', '#c9c9bf', '#6f6285', '#4a3f5c'],
+    rows: [
+      '..00000000..',
+      '.0111111110.',
+      '..02....20..',
+      '..02.00.20..',
+      '..02.03.20..',
+      '.0000000000.',
+      '044544544540',
+      '045445445440',
+      '054454454450',
+      '044544544540',
+      '000000000000',
+      '............',
+    ],
+  },
+  crown: {
+    w: 12,
+    h: 12,
+    palette: ['#120c1a', '#fff1b0', '#f2c14e', '#c0342e', '#ff8a80', '#a8791c'],
+    rows: [
+      '............',
+      '............',
+      '.0...0...0..',
+      '010.010.010.',
+      '02202220220.',
+      '02222322220.',
+      '02223432220.',
+      '02222322250.',
+      '01111111150.',
+      '05555555550.',
+      '.0000000000.',
+      '............',
+    ],
+  },
+} as const satisfies Record<string, Sprite>
+
+/** Every sprite by id: content and scenery. */
+export const ALL_SPRITES = { ...SPRITES, ...SCENERY } as const
+
+export type SpriteId = keyof typeof ALL_SPRITES

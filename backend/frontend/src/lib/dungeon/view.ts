@@ -3,7 +3,7 @@
 import type { Component } from 'svelte'
 import { CircleQuestionMark, Crown, Flame, Gem, ShoppingBag, Skull, Swords } from '@lucide/svelte'
 import type { DungeonGame } from '$lib/api/game-ws'
-import type { ClassId } from '$shared/dungeon/content/classes'
+import { isClassId, type ClassId } from '$shared/dungeon/content/classes'
 import type { RoomType } from '$shared/dungeon/content/rooms'
 import type { Rarity } from '$shared/dungeon/content/types'
 import { roomsAbove, type MapRoom } from '$shared/dungeon/map'
@@ -18,6 +18,10 @@ export const RARITY_COLOR: Record<Rarity, string> = {
   epic: '#b66bff',
   legendary: '#f2c14e',
 }
+
+/** A hero's class, null until they picked one. */
+export const classOf = (hero: Pick<DungeonGame['heroes'][number], 'classId'>): ClassId | null =>
+  hero.classId && isClassId(hero.classId) ? hero.classId : null
 
 /** A class's colour: its HP bar, its bars on the summary. */
 export const CLASS_COLOR: Record<ClassId, string> = {
